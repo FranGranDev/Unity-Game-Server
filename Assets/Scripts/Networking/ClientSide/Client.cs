@@ -49,11 +49,11 @@ namespace Networking.ClientSide
 
                 Send(new Message(nameof(ConnectMessage), player));
 
-                Logger.Log($"Connecting...");
+                UIDebugger.Log($"Connecting...");
             }
             catch(Exception e)
             {
-                Logger.Log($"Can not connect: {e}");
+                UIDebugger.Log($"Can not connect: {e}");
             }
         }
         public void Stop()
@@ -92,7 +92,7 @@ namespace Networking.ClientSide
         }
         public async void Send(Message message)
         {
-            Logger.Log($"Send: {message.MethodName} {serverEndPoint}");
+            UIDebugger.Log($"Send: {message.MethodName} {serverEndPoint}");
 
             await socket.SendToAsync(message.ToBytes(), SocketFlags.None, serverEndPoint);
         }
@@ -109,11 +109,11 @@ namespace Networking.ClientSide
 
             OnPlayerDisconnected?.Invoke(player);
 
-            Logger.Log("Disconnected.");
+            UIDebugger.Log("Disconnected.");
         }
         public override void ChatMessage(Player player, string text, IPEndPoint endPoint)
         {
-            Logger.Log($"{player.Name}: {text}");
+            UIDebugger.Log($"{player.Name}: {text}");
         }
     }
 }

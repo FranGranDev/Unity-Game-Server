@@ -44,12 +44,12 @@ namespace Networking.Services
                 }
                 catch(Exception e)
                 {
-                    Logger.Log($"Invalid argument for method {methodName} | Exception: {e}");
+                    UIDebugger.Log($"Invalid argument for method {methodName} | Exception: {e}");
                 }
             }
             else
             {
-                Logger.Log($"Method {methodName} not found");
+                UIDebugger.Log($"Method {methodName} not found");
             }
         }
     }

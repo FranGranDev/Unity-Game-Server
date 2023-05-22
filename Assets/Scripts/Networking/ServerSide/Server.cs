@@ -1,4 +1,7 @@
-﻿using Networking.Messages;
+﻿using UnityEngine;
+using System.Collections;
+
+using Networking.Messages;
 using Networking.Messages.Data;
 using Networking.Services;
 using System;
@@ -35,11 +38,12 @@ namespace Networking.ServerSide
         {
             socket.Bind(EndPoint);
 
-            Logger.Log($"Server started: IP {EndPoint}");
+            UIDebugger.Log($"Server started: IP {EndPoint}");
 
             Working = true;
 
             recieveThread = new Thread(new ThreadStart(RecieveLoop));
+            recieveThread.IsBackground = true;
             recieveThread.Start();
         }
         public void Stop()
@@ -57,7 +61,9 @@ namespace Networking.ServerSide
         {
             while (Working)
             {
+                UIDebugger.Log($"Wait for package...");
                 await Recieve();
+                UIDebugger.Log($"Recieve package...");
             }
         }
         private async Task Recieve()
@@ -103,7 +109,7 @@ namespace Networking.ServerSide
 
             Broadcast(message, endPoint);
 
-            Logger.Log($"Chat: {player.Name} | {text}");
+            UIDebugger.Log($"Chat: {player.Name} | {text}");
         }
         public override void ConnectMessage(Player player, IPEndPoint endPoint)
         {
@@ -113,7 +119,7 @@ namespace Networking.ServerSide
             Message message = new Message(nameof(ConnectMessage), player);
             Broadcast(message);
 
-            Logger.Log($"New player connected: {player.Name} | {endPoint}");
+            UIDebugger.Log($"New player connected: {player.Name} | {endPoint}");
         }
         public override void DisconnectMessage(Player player, IPEndPoint endPoint)
         {
@@ -125,7 +131,7 @@ namespace Networking.ServerSide
             Message message = new Message(nameof(DisconnectMessage), player);
             Broadcast(message, endPoint);
 
-            Logger.Log($"Player disconnected: {player.Name}");
+            UIDebugger.Log($"Player disconnected: {player.Name}");
         }
     }
 }

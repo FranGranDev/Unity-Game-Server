@@ -56,7 +56,7 @@ namespace Networking.Messages
                 }
                 catch (Exception e)
                 {
-                    Logger.Log($"Can't deserialize object of type {Data[i].Type}. JSON: {Data[i].Data}. Error: {e}");
+                    UIDebugger.Log($"Can't deserialize object of type {Data[i].Type}. JSON: {Data[i].Data}. Error: {e}");
 
                     return null;
                 }
