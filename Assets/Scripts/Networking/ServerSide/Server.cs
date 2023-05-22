@@ -1,56 +1,61 @@
-﻿using System.Linq;
+﻿using Networking.Messages;
+using Networking.Messages.Data;
+using Networking.Services;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using System;
-using Networking.Attributes;
-using Networking.Services;
-using Networking.Messages;
-using Networking.Messages.Data;
+
 
 namespace Networking.ServerSide
 {
     public class Server : NetworkMethods
     {
-        public Server()
+        public Server(int port)
         {
             socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            endPoint = new IPEndPoint(IPAddress.Any, 8001);
+            EndPoint = new IPEndPoint(IPAddress.Any, port);
 
-            handlers = new Dictionary<IPEndPoint, Handler>();
+            Handlers = new Dictionary<IPEndPoint, Handler>();
         }
 
         private readonly Socket socket;
-        private readonly IPEndPoint endPoint;
-        private readonly Dictionary<IPEndPoint, Handler> handlers;
+        private Thread recieveThread;
 
-        private bool working;
+        public Dictionary<IPEndPoint, Handler> Handlers { get; }
+        public IPEndPoint EndPoint { get; }
+        public bool Working { get; private set; }
 
-
-        public event Action<Player> OnPlayerConnected;
-        public event Action<Player> OnPlayerDisconnected;
 
 
         public void Start()
         {
-            socket.Bind(endPoint);
+            socket.Bind(EndPoint);
 
-            Logger.Log($"Server started: IP {endPoint}");
+            Logger.Log($"Server started: IP {EndPoint}");
 
-            working = true;
-            Task.Run(RecieveLoop);
+            Working = true;
+
+            recieveThread = new Thread(new ThreadStart(RecieveLoop));
+            recieveThread.Start();
         }
         public void Stop()
         {
+            Message message = new Message(nameof(DisconnectMessage), Player.ServerPlayer);
+
+            Broadcast(message);
+
+            recieveThread.Abort();
             socket.Close();
-            working = false;
+            Working = false;
         }
 
         private async void RecieveLoop()
         {
-            while(working)
+            while (Working)
             {
                 await Recieve();
             }
@@ -73,7 +78,7 @@ namespace Networking.ServerSide
 
         private void Broadcast(Message message)
         {
-            IEnumerable<Handler> receivers = handlers.Values;
+            IEnumerable<Handler> receivers = Handlers.Values;
 
             foreach (Handler handler in receivers)
             {
@@ -82,7 +87,7 @@ namespace Networking.ServerSide
         }
         private void Broadcast(Message message, IPEndPoint except)
         {
-            IEnumerable<Handler> receivers = handlers.Values
+            IEnumerable<Handler> receivers = Handlers.Values
                 .Where(x => !x.EndPoint.Equals(except));
 
             foreach (Handler handler in receivers)
@@ -103,19 +108,22 @@ namespace Networking.ServerSide
         public override void ConnectMessage(Player player, IPEndPoint endPoint)
         {
             Handler handler = new Handler(socket, endPoint, player);
-            handlers.Add(endPoint, handler);
+            Handlers.Add(endPoint, handler);
 
             Message message = new Message(nameof(ConnectMessage), player);
-            handler.Send(message);
+            Broadcast(message);
 
             Logger.Log($"New player connected: {player.Name} | {endPoint}");
         }
         public override void DisconnectMessage(Player player, IPEndPoint endPoint)
         {
-            if(handlers.ContainsKey(endPoint))
+            if (Handlers.ContainsKey(endPoint))
             {
-                handlers.Remove(endPoint);
+                Handlers.Remove(endPoint);
             }
+
+            Message message = new Message(nameof(DisconnectMessage), player);
+            Broadcast(message, endPoint);
 
             Logger.Log($"Player disconnected: {player.Name}");
         }

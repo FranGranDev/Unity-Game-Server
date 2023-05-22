@@ -36,14 +36,15 @@ namespace Networking.Services
         {
             if (methodDictionary.ContainsKey(methodName))
             {
+                MethodInfo method = methodDictionary[methodName];
+
                 try
                 {
-                    MethodInfo method = methodDictionary[methodName];
                     method.Invoke(targetObject, args);
                 }
-                catch
+                catch(Exception e)
                 {
-                    Logger.Log($"Invalid argument for method {methodName}");
+                    Logger.Log($"Invalid argument for method {methodName} | Exception: {e}");
                 }
             }
             else

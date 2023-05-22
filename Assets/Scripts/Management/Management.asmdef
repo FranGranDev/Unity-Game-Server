@@ -1,8 +1,11 @@
 {
-    "name": "Networking",
-    "rootNamespace": "Networking",
+    "name": "Management",
+    "rootNamespace": "Management",
     "references": [
         "GUID:3a8a1cb55a1132549aa2373d3870ce07",
+        "GUID:757fd961246ee864a8839ac19ffc7a44",
+        "GUID:72c5050eb12dd074799f1da116d73e4b",
+        "GUID:66ac288c6d0c3f044a2a16e8cc6eb9a0",
         "GUID:5fabb4b5fcd574d43843d3b81cb9cf90"
     ],
     "includePlatforms": [],

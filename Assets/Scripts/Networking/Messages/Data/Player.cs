@@ -10,13 +10,28 @@ namespace Networking.Messages.Data
     [Serializable]
     public class Player
     {
-        public Player()
+        public static Player ServerPlayer
+        {
+            get
+            {
+                return new Player("Server")
+                {
+                    Server = true,
+                };
+            }
+        }
+
+        public Player(string name)
         {
             Id = Guid.NewGuid();
+
+            Name = name;
         }
 
         public Guid Id { get; set; }
         public string Name { get; set; }
+
+        public bool Server { get; set; }
 
 
         public override bool Equals(object obj)

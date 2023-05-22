@@ -12,20 +12,17 @@ namespace Networking.ClientSide
 {
     public class Client : NetworkMethods
     {
-        public Client(string host, int port)
-        {
+        public Client(Player player, IPAddress host, int port)
+        {           
+            this.player = player;
             this.host = host;
             this.port = port;
 
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            player = new Player()
-            {
-                Name = "New player",
-            };
         }
 
         private int port;
-        private string host;
+        private IPAddress host;
         private Socket socket;
         
         private IPEndPoint serverEndPoint;
@@ -34,19 +31,17 @@ namespace Networking.ClientSide
         private bool working;
 
 
-        public event Action OnConntected;
-        public event Action OnDisconnected;
+        public event Action<Player> OnPlayerConntected;
+        public event Action<Player> OnPlayerDisconnected;
 
 
         public void Start()
         {
             try
             {
-                Console.ReadKey(false);
                 working = true;
 
-                IPAddress serverIP = IPAddress.Parse(host);
-                serverEndPoint = new IPEndPoint(serverIP, port);
+                serverEndPoint = new IPEndPoint(host, port);
 
                 socket.Bind(new IPEndPoint(IPAddress.Any, 0));
 
@@ -54,19 +49,11 @@ namespace Networking.ClientSide
 
                 Send(new Message(nameof(ConnectMessage), player));
 
-                while(working)
-                {
-                    string text = Console.ReadLine();
-
-                    Message message = new Message(nameof(ChatMessage), player, text);
-                    Send(message);
-                }
-
-                Logger.Log("Connecting...");
+                Logger.Log($"Connecting...");
             }
-            catch
+            catch(Exception e)
             {
-                Logger.Log("Can not connect.");
+                Logger.Log($"Can not connect: {e}");
             }
         }
         public void Stop()
@@ -105,24 +92,24 @@ namespace Networking.ClientSide
         }
         public async void Send(Message message)
         {
+            Logger.Log($"Send: {message.MethodName} {serverEndPoint}");
+
             await socket.SendToAsync(message.ToBytes(), SocketFlags.None, serverEndPoint);
         }
 
 
         public override void ConnectMessage(Player player, IPEndPoint endPoint)
-        {
-            Logger.Log("Connected.");
-
-            OnConntected?.Invoke();
+        {            
+            OnPlayerConntected?.Invoke(player);
         }
         public override void DisconnectMessage(Player player, IPEndPoint endPoint)
         {
             working = false;
             socket.Close();
 
-            Logger.Log("Disconnected.");
+            OnPlayerDisconnected?.Invoke(player);
 
-            OnDisconnected?.Invoke();
+            Logger.Log("Disconnected.");
         }
         public override void ChatMessage(Player player, string text, IPEndPoint endPoint)
         {

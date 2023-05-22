@@ -14,7 +14,7 @@ namespace UI
         private Button button;
 
         public string ID => id;
-        public System.Action OnClick { get; set; }
+        public event System.Action OnClick;
 
 
 

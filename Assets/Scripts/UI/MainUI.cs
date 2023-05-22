@@ -1,13 +1,14 @@
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Net;
 using NaughtyAttributes;
 using Services;
 using Data;
 
 namespace UI
 {
-    public class MainUI : MonoBehaviour
+    public class MainUI : MonoBehaviour, Initializable
     {
         [Foldout("Main"), SerializeField] private Transform mainCanvas;
         [Foldout("Main"), SerializeField] private InputUI inputName;
@@ -30,8 +31,7 @@ namespace UI
         [Foldout("States"), SerializeField] private States state;
 
         private Dictionary<States, IEnumerable<UIPanel>> menuPanels;
-
-        private States State
+        public States State
         {
             get => state;
             set
@@ -49,10 +49,10 @@ namespace UI
         }
 
 
-        private void Start()
-        {
-            Initialize();
-        }
+        public event System.Action<int> OnStartHost;
+        public event System.Action<IPAddress, int> OnJoinHost;
+
+
         public void Initialize()
         {
             TurnUI(false);
@@ -70,11 +70,16 @@ namespace UI
                 .ToList()
                 .ForEach(x => x.Initilize());
 
-            InitializeService.Initialize(transform);
-
 
             inputName.Fill(SavedData.PlayerName);
             inputName.OnFilled += ChangePlayerName;
+
+            hostPortNumber.Fill(SavedData.HostPort.ToString());
+            hostPortNumber.OnFilled += ChangePortNumber;
+
+            string address = $"{SavedData.JoinAddress}:{SavedData.JoinPort}";
+            joinIPAddress.Fill(address);
+            joinIPAddress.OnFilled += ChangeJoinAddress;
 
             hostButton.OnClick += GoHostMenu;
             joinButton.OnClick += GoJoinMenu;
@@ -82,12 +87,16 @@ namespace UI
             joinBackButton.OnClick += GoMainMenu;
 
 
+            hostLobbyButton.OnClick += StartHost;
+            joinLobbyButton.OnClick += JoinHost;
+
             this.Delayed(() =>
             {
                 TurnUI(true);
                 State = States.Main;
             }, 0.1f);
         }
+
 
         private void OnStateEnd(States state)
         {
@@ -116,6 +125,39 @@ namespace UI
         {
             SavedData.PlayerName = name;
         }
+        private void ChangePortNumber(string name)
+        {
+            int port = 0;
+            if(int.TryParse(name, out port))
+            {
+                SavedData.HostPort = port;
+            }
+            else
+            {
+                hostPortNumber.Fill("Invalid Value!");
+            }
+        }
+        private void ChangeJoinAddress(string text)
+        {
+            var address = text.Split(":");
+
+            if(address.Length != 2)
+            {
+                joinIPAddress.Fill("Invalid Value!");
+                return;
+            }
+
+            if(IPAddress.TryParse(address[0], out IPAddress ip) && int.TryParse(address[1], out int port))
+            {
+                SavedData.JoinAddress = address[0];
+                SavedData.JoinPort = port;
+            }
+            else
+            {
+                joinIPAddress.Fill("Invalid Value!");
+            }
+
+        }
 
 
         private void GoMainMenu()
@@ -129,6 +171,18 @@ namespace UI
         private void GoHostMenu()
         {
             State = States.Host;
+        }
+
+
+        private void StartHost()
+        {
+            OnStartHost?.Invoke(SavedData.HostPort);
+        }
+        private void JoinHost()
+        {
+            IPAddress address = IPAddress.Parse(SavedData.JoinAddress);
+
+            OnJoinHost?.Invoke(address, SavedData.JoinPort);
         }
 
 

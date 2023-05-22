@@ -18,7 +18,7 @@ public class InputUI : MonoBehaviour, Initializable
     {
         inputField = GetComponent<TMP_InputField>();
 
-        inputField.onSubmit.AddListener(CallOnFilled);
+        inputField.onEndEdit.AddListener(CallOnFilled);
     }
 
     private void CallOnFilled(string text)
@@ -27,6 +27,12 @@ public class InputUI : MonoBehaviour, Initializable
     }
     public void Fill(string text)
     {
+        if (inputField == null)
+        {
+            inputField = GetComponent<TMP_InputField>();
+        }
+
+
         inputField.text = text;
     }
 }
