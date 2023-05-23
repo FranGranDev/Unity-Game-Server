@@ -19,13 +19,13 @@ namespace Networking.ServerSide
     {
         public Server(int port)
         {
-            socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
             EndPoint = new IPEndPoint(IPAddress.Any, port);
+            udpClient = new UdpClient(EndPoint);
 
             Handlers = new Dictionary<IPEndPoint, Handler>();
         }
 
-        private readonly Socket socket;
+        private readonly UdpClient udpClient;
         private Thread recieveThread;
 
         public Dictionary<IPEndPoint, Handler> Handlers { get; }
@@ -36,9 +36,7 @@ namespace Networking.ServerSide
 
         public void Start()
         {
-            socket.Bind(EndPoint);
-
-            UIDebugger.Log($"Server started: IP {EndPoint}");
+            SafeDebugger.Log($"Server started: IP {EndPoint}");
 
             Working = true;
 
@@ -53,7 +51,7 @@ namespace Networking.ServerSide
             Broadcast(message);
 
             recieveThread.Abort();
-            socket.Close();
+            udpClient.Close();
             Working = false;
         }
 
@@ -61,24 +59,20 @@ namespace Networking.ServerSide
         {
             while (Working)
             {
-                UIDebugger.Log($"Wait for package...");
                 await Recieve();
-                UIDebugger.Log($"Recieve package...");
             }
+
         }
         private async Task Recieve()
         {
-            byte[] buffer = new byte[1024];
-            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+            UdpReceiveResult receivedResult = await udpClient.ReceiveAsync();
 
-            var info = await socket.ReceiveFromAsync(new ArraySegment<byte>(buffer), SocketFlags.None, remoteEndPoint);
-
-            byte[] data = new byte[info.ReceivedBytes];
-            Array.Copy(buffer, data, info.ReceivedBytes);
+            byte[] data = new byte[receivedResult.Buffer.Length];
+            Array.Copy(receivedResult.Buffer, data, receivedResult.Buffer.Length);
 
 
             Message message = Message.FromBytes(data);
-            Invoker.Invoke(message.MethodName, Concat(message.GetData(), info.RemoteEndPoint));
+            Invoker.Invoke(message.MethodName, Concat(message.GetData(), receivedResult.RemoteEndPoint));
         }
 
 
@@ -109,17 +103,17 @@ namespace Networking.ServerSide
 
             Broadcast(message, endPoint);
 
-            UIDebugger.Log($"Chat: {player.Name} | {text}");
+            SafeDebugger.Log($"Chat: {player.Name} | {text}");
         }
         public override void ConnectMessage(Player player, IPEndPoint endPoint)
         {
-            Handler handler = new Handler(socket, endPoint, player);
+            Handler handler = new Handler(udpClient, endPoint, player);
             Handlers.Add(endPoint, handler);
 
             Message message = new Message(nameof(ConnectMessage), player);
             Broadcast(message);
 
-            UIDebugger.Log($"New player connected: {player.Name} | {endPoint}");
+            SafeDebugger.Log($"New player connected: {player.Name} | {endPoint}");
         }
         public override void DisconnectMessage(Player player, IPEndPoint endPoint)
         {
@@ -131,7 +125,7 @@ namespace Networking.ServerSide
             Message message = new Message(nameof(DisconnectMessage), player);
             Broadcast(message, endPoint);
 
-            UIDebugger.Log($"Player disconnected: {player.Name}");
+            SafeDebugger.Log($"Player disconnected: {player.Name}");
         }
     }
 }

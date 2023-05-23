@@ -8,7 +8,7 @@ namespace Networking.ServerSide
 {
     public class Handler
     {
-        public Handler(Socket server, IPEndPoint endPoint, Player player)
+        public Handler(UdpClient server, IPEndPoint endPoint, Player player)
         {
             Server = server;
             EndPoint = endPoint;
@@ -17,12 +17,13 @@ namespace Networking.ServerSide
 
         public Player Player { get; }
         public IPEndPoint EndPoint { get; }
-        public Socket Server { get; }
+        public UdpClient Server { get; }
 
 
         public async void Send(Message message)
         {
-            await Server.SendToAsync(message.ToBytes(), SocketFlags.None, EndPoint);
+            byte[] data = message.ToBytes();
+            await Server.SendAsync(data, data.Length, EndPoint);
         }
 
 

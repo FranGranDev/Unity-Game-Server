@@ -49,10 +49,10 @@ namespace Management
             Debug.Log("Call Start Host");
 
             server.StartServer(port);
-            this.Delayed(() =>
-            {
-                client.StartClient(port);
-            }, 0.1f);
+            //this.Delayed(() =>
+            //{
+            //    client.StartClient(port);
+            //}, 0.1f);
         }
 
 

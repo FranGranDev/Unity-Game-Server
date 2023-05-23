@@ -15,15 +15,13 @@ namespace Networking.ClientSide
         public Client(Player player, IPAddress host, int port)
         {           
             this.player = player;
-            this.host = host;
-            this.port = port;
 
-            socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            serverEndPoint = new IPEndPoint(host, port);
+
+            udpClient = new UdpClient();
         }
 
-        private int port;
-        private IPAddress host;
-        private Socket socket;
+        private UdpClient udpClient;
         
         private IPEndPoint serverEndPoint;
         private Player player;
@@ -41,19 +39,15 @@ namespace Networking.ClientSide
             {
                 working = true;
 
-                serverEndPoint = new IPEndPoint(host, port);
-
-                socket.Bind(new IPEndPoint(IPAddress.Any, 0));
-
                 Task.Run(RecieveLoop);
 
                 Send(new Message(nameof(ConnectMessage), player));
 
-                UIDebugger.Log($"Connecting...");
+                SafeDebugger.Log($"Connecting...");
             }
             catch(Exception e)
             {
-                UIDebugger.Log($"Can not connect: {e}");
+                SafeDebugger.Log($"Can not connect: {e}");
             }
         }
         public void Stop()
@@ -71,30 +65,32 @@ namespace Networking.ClientSide
                     await Recieve();
                 }
             }
-            catch
+            catch(Exception e)
             {
+                SafeDebugger.Log($"Exception: {e}");
                 DisconnectMessage(player, serverEndPoint);
             }
         }
         private async Task Recieve()
         {
-            byte[] buffer = new byte[1024];
-            EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+            UdpReceiveResult receivedResult = await udpClient.ReceiveAsync();
 
-            var info = await socket.ReceiveFromAsync(new ArraySegment<byte>(buffer), SocketFlags.None, remoteEndPoint);
-
-            byte[] data = new byte[info.ReceivedBytes];
-            Array.Copy(buffer, data, info.ReceivedBytes);
+            byte[] data = new byte[receivedResult.Buffer.Length];
+            Array.Copy(receivedResult.Buffer, data, receivedResult.Buffer.Length);
 
 
             Message message = Message.FromBytes(data);
-            Invoker.Invoke(message.MethodName, Concat(message.GetData(), info.RemoteEndPoint));
+            Invoker.Invoke(message.MethodName, Concat(message.GetData(), receivedResult.RemoteEndPoint));
         }
         public async void Send(Message message)
         {
-            UIDebugger.Log($"Send: {message.MethodName} {serverEndPoint}");
+            if (!working)
+                return;
 
-            await socket.SendToAsync(message.ToBytes(), SocketFlags.None, serverEndPoint);
+            byte[] data = message.ToBytes();
+            await udpClient.SendAsync(data, data.Length, serverEndPoint);
+
+            SafeDebugger.Log($"Send: {message.MethodName} {serverEndPoint}");
         }
 
 
@@ -105,15 +101,15 @@ namespace Networking.ClientSide
         public override void DisconnectMessage(Player player, IPEndPoint endPoint)
         {
             working = false;
-            socket.Close();
+            udpClient.Close();
 
             OnPlayerDisconnected?.Invoke(player);
 
-            UIDebugger.Log("Disconnected.");
+            SafeDebugger.Log("Disconnected.");
         }
         public override void ChatMessage(Player player, string text, IPEndPoint endPoint)
         {
-            UIDebugger.Log($"{player.Name}: {text}");
+            SafeDebugger.Log($"{player.Name}: {text}");
         }
     }
 }

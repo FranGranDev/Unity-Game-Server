@@ -40,11 +40,12 @@ namespace Management
 
 
             client.OnPlayerConntected += CallOnPlayerConnected;
-            
+            client.OnPlayerDisconnected += CallOnPlayerDisconnected;
 
 
             client.Start();
         }
+
         /// <summary>
         /// Stop client work
         /// </summary>
@@ -63,6 +64,14 @@ namespace Management
             UnityMainThreadDispatcher.Instance().Enqueue(() =>
             {
                 OnPlayerConnected?.Invoke(player);
+            });
+        }
+
+        private void CallOnPlayerDisconnected(Player player)
+        {
+            UnityMainThreadDispatcher.Instance().Enqueue(() =>
+            {
+                OnPlayerDisconnected?.Invoke(player);
             });
         }
 

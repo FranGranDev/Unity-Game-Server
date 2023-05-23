@@ -17,6 +17,7 @@ namespace Networking.Messages
         public Message(string methodName, params object[] args)
         {
             MethodName = methodName;
+            Id = new Random().Next(0, 10000).ToString();
 
             Data = new List<ArgData>();
             foreach (object arg in args)
@@ -31,6 +32,7 @@ namespace Networking.Messages
         public Message(string methodName)
         {
             MethodName = methodName;
+            Id = new Guid().ToString();
 
             Data = new List<ArgData>();
         }
@@ -40,6 +42,7 @@ namespace Networking.Messages
         /// Method to call on Server/Client with attribute NetworkMethod
         /// </summary>
         public string MethodName { get; set; }
+        public string Id { get; set; }
         public List<ArgData> Data { get; set; }
 
 
@@ -56,7 +59,7 @@ namespace Networking.Messages
                 }
                 catch (Exception e)
                 {
-                    UIDebugger.Log($"Can't deserialize object of type {Data[i].Type}. JSON: {Data[i].Data}. Error: {e}");
+                    SafeDebugger.Log($"Can't deserialize object of type {Data[i].Type}. JSON: {Data[i].Data}. Error: {e}");
 
                     return null;
                 }

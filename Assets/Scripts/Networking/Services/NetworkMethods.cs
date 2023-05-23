@@ -30,14 +30,14 @@ namespace Networking.Services
         [NetworkMethod(nameof(ErrorMessage))]
         public virtual void ErrorMessage(string error)
         {
-            UIDebugger.Log(error);
+            SafeDebugger.Log(error);
         }
 
 
         [NetworkMethod(nameof(ChatMessage))]
         public virtual void ChatMessage(Player player, string text, IPEndPoint endPoint)
         {
-            UIDebugger.Log($"{player.Name}: {text}");
+            SafeDebugger.Log($"{player.Name}: {text}");
         }
 
 

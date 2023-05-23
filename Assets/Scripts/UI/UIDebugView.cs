@@ -11,7 +11,7 @@ namespace UI
 
         private void Awake()
         {
-            UIDebugger.OnLog += Log;
+            SafeDebugger.OnLog += Log;
         }
 
         private void Log(string obj)
