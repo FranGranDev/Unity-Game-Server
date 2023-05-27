@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 
 
@@ -17,7 +18,7 @@ namespace Networking.Messages
         public Message(string methodName, params object[] args)
         {
             MethodName = methodName;
-            Id = new Random().Next(0, 10000).ToString();
+            GenerateID();
 
             Data = new List<ArgData>();
             foreach (object arg in args)
@@ -26,13 +27,14 @@ namespace Networking.Messages
                 {
                     Data = JsonConvert.SerializeObject(arg),
                     Type = arg.GetType().FullName,
+                    Assembly = arg.GetType().Assembly.FullName,
                 });
             }
         }
         public Message(string methodName)
         {
             MethodName = methodName;
-            Id = new Guid().ToString();
+            GenerateID();
 
             Data = new List<ArgData>();
         }
@@ -54,7 +56,7 @@ namespace Networking.Messages
             {
                 try
                 {
-                    Type targetType = Type.GetType(Data[i].Type);
+                    Type targetType = Type.GetType($"{Data[i].Type}, {Data[i].Assembly}");
                     data[i] = JsonConvert.DeserializeObject(Data[i].Data, targetType);
                 }
                 catch (Exception e)
@@ -88,11 +90,25 @@ namespace Networking.Messages
         }
 
 
+        private void GenerateID()
+        {
+            Id = Guid.NewGuid().ToString();
+        }
+
+
         [Serializable]
         public class ArgData
         {
             public string Type { get; set; }
+            public string Assembly { get; set; }
             public string Data { get; set; }
         }
+    }
+
+
+    public class RecieveInfo
+    {
+        public IPEndPoint EndPoint { get; set; }
+        public string MessageId { get; set; }
     }
 }

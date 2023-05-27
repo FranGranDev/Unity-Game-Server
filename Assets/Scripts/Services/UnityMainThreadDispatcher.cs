@@ -96,6 +96,16 @@ public class UnityMainThreadDispatcher : MonoBehaviour {
 		return _instance != null;
 	}
 
+	public static void Execute(Action action)
+    {
+		if(_instance == null)
+        {
+			return;
+        }
+
+		_instance.Enqueue(action);
+    }
+
 	public static UnityMainThreadDispatcher Instance() {
 		return _instance;
 	}
@@ -109,7 +119,7 @@ public class UnityMainThreadDispatcher : MonoBehaviour {
 	}
 
 	void OnDestroy() {
-			_instance = null;
+		_instance = null;
 	}
 
 

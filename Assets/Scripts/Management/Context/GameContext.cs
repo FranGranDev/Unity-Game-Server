@@ -1,10 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 using UnityEngine;
 using Services;
 using Networking;
 using Data;
-using Networking.Messages.Data;
+using Networking.Data;
 
 namespace Management
 {
@@ -33,6 +34,8 @@ namespace Management
         [SerializeField] private ClientNetworking client;
         [SerializeField] private ServerNetworking server;
 
+        public Lobby Lobby { get; private set; }
+
 
         private void SetupGame()
         {
@@ -40,12 +43,18 @@ namespace Management
         }
         private void InitializeComponents()
         {
-            client.Initialize();
+            Lobby = new Lobby(new Player(SavedData.PlayerName));
 
-            client.Player = new Player(SavedData.PlayerName);
+            client.Initialize(Lobby);
+
+            client.OnLoadScene += LoadScene;
         }
 
 
+        private void LoadScene(int index)
+        {
+            SceneManager.LoadScene(index);
+        }
         private void OnSceneAwake(SceneContext scene)
         {
             scene.Visit(this);
@@ -55,7 +64,7 @@ namespace Management
         {
             InitializeService.Bind(scene, client);
             InitializeService.Bind(scene, server);
-
+            InitializeService.Bind<ILobby>(scene, Lobby);
         }
     }
 }

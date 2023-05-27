@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Net;
 using System.Collections.Generic;
-using Networking.Messages.Data;
+using Networking.Data;
 using UnityEngine;
 using UI;
 using Services;
@@ -22,14 +22,16 @@ namespace Management
             mainUI.OnStartHost += CallStartHost;
             mainUI.OnJoinHost += CallJoinHost;
 
+            mainUI.OnLeaveLobby += CallLeaveLobby;
+            mainUI.OnStartGame += CallStartGame;
+
             InitializeService.Initialize(transform);
         }
+
+
         public void Bind(ClientNetworking obj)
         {
             client = obj;
-
-            client.OnPlayerConnected += OnPlayerConnected;
-            client.OnPlayerDisconnected += OnPlayerDisconnected;
         }
         public void Bind(ServerNetworking obj)
         {
@@ -39,37 +41,29 @@ namespace Management
 
         private void CallJoinHost(IPAddress address, int port)
         {
-            Debug.Log("Call Join Host");
-
-            client.StartClient(address, port);
-
+            client.StartRemoteClient(address, port);
         }
         private void CallStartHost(int port)
         {
-            Debug.Log("Call Start Host");
-
             server.StartServer(port);
-            //this.Delayed(() =>
-            //{
-            //    client.StartClient(port);
-            //}, 0.1f);
+            this.Delayed(() =>
+            {
+                client.StartMasterClient(port);
+            }, Time.deltaTime);
         }
 
 
-        private void OnPlayerDisconnected(Player player)
+        private void CallStartGame()
         {
-
+            client.LoadScene(1);
         }
-        private void OnPlayerConnected(Player player)
+        private void CallLeaveLobby()
         {
-            if (player.Equals(client.Player))
+            server.StopServer();
+            this.Delayed(() =>
             {
-                mainUI.State = MainUI.States.Lobby;
-            }
-            else
-            {
-                Debug.Log("Other player connected");
-            }
+                client.StopClient();
+            }, Time.deltaTime);
         }
 
 

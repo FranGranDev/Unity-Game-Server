@@ -89,6 +89,8 @@ namespace UI
         {
             enabledPredicate = predicate;
         }
+
+
         protected abstract void AddAnimations();
         protected virtual void OnInitilize()
         {

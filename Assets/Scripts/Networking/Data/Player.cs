@@ -5,7 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Networking.Messages.Data
+namespace Networking.Data
 {
     [Serializable]
     public class Player
@@ -23,14 +23,15 @@ namespace Networking.Messages.Data
 
         public Player(string name)
         {
-            Id = Guid.NewGuid();
+            Id = Guid.NewGuid().ToString();
 
             Name = name;
         }
 
-        public Guid Id { get; set; }
+        public string Id { get; set; }
         public string Name { get; set; }
 
+        public bool Master { get; set; }
         public bool Server { get; set; }
 
 

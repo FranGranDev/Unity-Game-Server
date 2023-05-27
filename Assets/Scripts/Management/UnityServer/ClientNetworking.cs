@@ -1,51 +1,71 @@
-using Networking.ServerSide;
+using Networking.Messages;
+using System;
 using Networking.ClientSide;
-using Networking.Messages.Data;
+using Networking.Data;
 using UnityEngine;
 using System.Net;
+using System.Collections.Generic;
 
 namespace Management
 {
     public class ClientNetworking : MonoBehaviour
     {
         private Client client;
+        private Lobby lobby;
+        private Player player;
+
+        private Dictionary<string, Delegate> delayedActions;
 
 
-        public Player Player { get; set; }
+        public event Action<int> OnLoadScene; 
 
 
-        public event System.Action<Player> OnPlayerConnected;
-        public event System.Action<Player> OnPlayerDisconnected;
-
-
-        public void Initialize()
+        public void Initialize(Lobby lobby)
         {
+            this.lobby = lobby;
 
+            SubscribeToLobby();
+
+            player = lobby.Self;
+            delayedActions = new Dictionary<string, Delegate>();
+        }
+        private void SubscribeToClient()
+        {
+            client.OnPlayerConntected += CallPlayerConnected;
+            client.OnPlayerDisconnected += CallPlayerDisconnected;
+            client.OnChatMessage += CallChatMessage;
+
+            client.OnLoadScene += CallOnLoadScene;
+
+            client.OnRecieveData += OnRecieveData;
+        }
+
+        private void SubscribeToLobby()
+        {
+            lobby.OnRequestPlayers += GetPlayersList;
         }
 
 
         /// <summary>
-        /// Use this to start local Client
+        /// Use this to start master Client
         /// </summary>
-        public void StartClient(int port)
+        public void StartMasterClient(int port)
         {
-            StartClient(IPAddress.Parse("127.0.0.1"), port);
+            player.Master = true;
+
+            StartRemoteClient(IPAddress.Parse("127.0.0.1"), port);
         }
         /// <summary>
         /// Use this to start remote Client
         /// </summary>
-        public void StartClient(IPAddress address, int port)
+        public void StartRemoteClient(IPAddress address, int port)
         {
-            client = new Client(Player, address, port);
+            client = new Client(player, address, port);
 
-
-            client.OnPlayerConntected += CallOnPlayerConnected;
-            client.OnPlayerDisconnected += CallOnPlayerDisconnected;
-
+            SubscribeToClient();
 
             client.Start();
         }
-
         /// <summary>
         /// Stop client work
         /// </summary>
@@ -55,26 +75,69 @@ namespace Management
                 return;
 
             client.Stop();
+            delayedActions.Clear();
         }
 
 
-
-        private void CallOnPlayerConnected(Player player)
+        public async void LoadScene(int index)
         {
-            UnityMainThreadDispatcher.Instance().Enqueue(() =>
+            Message message = new Message(nameof(client.LoadSceneMessage), index);
+
+            await client.Send(message);
+        }
+
+        public async void GetPlayersList(Action<List<Player>> onRecieve)
+        {
+            Message message = new Message(nameof(client.RequestPlayersList));
+
+            delayedActions.Add(message.Id, onRecieve);
+
+            await client.Send(message);
+        }
+
+
+        private void CallPlayerConnected(Player player)
+        {
+            UnityMainThreadDispatcher.Execute(() =>
             {
-                OnPlayerConnected?.Invoke(player);
+                lobby.OnPlayerConnected(player);
+            });
+        }
+        private void CallPlayerDisconnected(Player player)
+        {
+            UnityMainThreadDispatcher.Execute(() =>
+            {
+                lobby.OnPlayerDisconnected(player);
+            });
+        }
+        private void CallChatMessage(Player player, string text)
+        {
+            UnityMainThreadDispatcher.Execute(() =>
+            {
+                lobby.OnPlayerChatMessage(player, text);
             });
         }
 
-        private void CallOnPlayerDisconnected(Player player)
+        private void CallOnLoadScene(int index)
         {
-            UnityMainThreadDispatcher.Instance().Enqueue(() =>
+            UnityMainThreadDispatcher.Execute(() =>
             {
-                OnPlayerDisconnected?.Invoke(player);
+                OnLoadScene?.Invoke(index);
             });
         }
 
+
+        private void OnRecieveData(object[] data, string id)
+        {
+            if(delayedActions.ContainsKey(id))
+            {
+                UnityMainThreadDispatcher.Execute(() =>
+                {
+                    delayedActions[id]?.DynamicInvoke(data);
+                    delayedActions.Remove(id);
+                });
+            }
+        }
 
 
         private void OnDestroy()

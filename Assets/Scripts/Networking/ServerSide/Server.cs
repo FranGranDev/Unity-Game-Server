@@ -2,7 +2,7 @@
 using System.Collections;
 
 using Networking.Messages;
-using Networking.Messages.Data;
+using Networking.Data;
 using Networking.Services;
 using System;
 using System.Collections.Generic;
@@ -25,7 +25,7 @@ namespace Networking.ServerSide
             Handlers = new Dictionary<IPEndPoint, Handler>();
         }
 
-        private readonly UdpClient udpClient;
+        private UdpClient udpClient;
         private Thread recieveThread;
 
         public Dictionary<IPEndPoint, Handler> Handlers { get; }
@@ -40,30 +40,37 @@ namespace Networking.ServerSide
 
             Working = true;
 
-            recieveThread = new Thread(new ThreadStart(RecieveLoop));
+
+            recieveThread = new Thread(new ThreadStart(RecieveUDPLoop));
             recieveThread.IsBackground = true;
             recieveThread.Start();
         }
-        public void Stop()
+        public async void Stop()
         {
             Message message = new Message(nameof(DisconnectMessage), Player.ServerPlayer);
 
-            Broadcast(message);
+            await Broadcast(message);
 
             recieveThread.Abort();
+
             udpClient.Close();
+            udpClient = null;
+
             Working = false;
+
+            Handlers.Clear();
         }
 
-        private async void RecieveLoop()
+
+        private async void RecieveUDPLoop()
         {
             while (Working)
             {
-                await Recieve();
+                await RecieveUDP();
             }
 
         }
-        private async Task Recieve()
+        private async Task RecieveUDP()
         {
             UdpReceiveResult receivedResult = await udpClient.ReceiveAsync();
 
@@ -72,60 +79,95 @@ namespace Networking.ServerSide
 
 
             Message message = Message.FromBytes(data);
-            Invoker.Invoke(message.MethodName, Concat(message.GetData(), receivedResult.RemoteEndPoint));
+            RecieveInfo info = new RecieveInfo()
+            {
+                EndPoint = receivedResult.RemoteEndPoint,
+                MessageId = message.Id,
+            };
+            Invoker.Invoke(message.MethodName, Concat(message.GetData(), info));
         }
 
 
-        private void Broadcast(Message message)
+        private async Task Broadcast(Message message)
         {
-            IEnumerable<Handler> receivers = Handlers.Values;
+            IEnumerable<Handler> receivers = new List<Handler>(Handlers.Values);
 
             foreach (Handler handler in receivers)
             {
-                handler.Send(message);
+                await handler.Send(message);
             }
         }
-        private void Broadcast(Message message, IPEndPoint except)
+        private async Task Broadcast(Message message, IPEndPoint except)
         {
-            IEnumerable<Handler> receivers = Handlers.Values
-                .Where(x => !x.EndPoint.Equals(except));
+            IEnumerable<Handler> receivers = new List<Handler>(Handlers.Values
+                .Where(x => !x.EndPoint.Equals(except)));
 
             foreach (Handler handler in receivers)
             {
-                handler.Send(message);
+                await handler.Send(message);
             }
         }
 
 
-        public override void ChatMessage(Player player, string text, IPEndPoint endPoint)
+        public override async void ConnectMessage(Player player, RecieveInfo info)
         {
-            Message message = new Message(nameof(ChatMessage), player, text);
-
-            Broadcast(message, endPoint);
-
-            SafeDebugger.Log($"Chat: {player.Name} | {text}");
-        }
-        public override void ConnectMessage(Player player, IPEndPoint endPoint)
-        {
-            Handler handler = new Handler(udpClient, endPoint, player);
-            Handlers.Add(endPoint, handler);
+            Handler handler = new Handler(udpClient, info.EndPoint);
+            handler.Player = player;
+            Handlers.Add(info.EndPoint, handler);
 
             Message message = new Message(nameof(ConnectMessage), player);
-            Broadcast(message);
+            message.Id = info.MessageId;
 
-            SafeDebugger.Log($"New player connected: {player.Name} | {endPoint}");
+            await Broadcast(message);
+
+            SafeDebugger.Log($"Server | New player connected: {player.Name} | {info.EndPoint}");
         }
-        public override void DisconnectMessage(Player player, IPEndPoint endPoint)
+        public override async void DisconnectMessage(Player player, RecieveInfo info)
         {
-            if (Handlers.ContainsKey(endPoint))
+            if (!Handlers.ContainsKey(info.EndPoint))
             {
-                Handlers.Remove(endPoint);
+                return;
             }
+            Handlers.Remove(info.EndPoint);
 
             Message message = new Message(nameof(DisconnectMessage), player);
-            Broadcast(message, endPoint);
+            message.Id = info.MessageId;
 
-            SafeDebugger.Log($"Player disconnected: {player.Name}");
+            await Broadcast(message, info.EndPoint);
+
+            SafeDebugger.Log($"Server | Player disconnected: {player.Name}");
+        }
+        public override async void ChatMessage(Player player, string text, RecieveInfo info)
+        {
+            Message message = new Message(nameof(ChatMessage), player, text);
+            message.Id = info.MessageId;
+
+            await Broadcast(message, info.EndPoint);
+
+            SafeDebugger.Log($"Server | Chat: {player.Name} | {text}");
+        }
+
+        public override async void RequestPlayersList(RecieveInfo info)
+        {
+            List<Player> players = Handlers
+                .Select(x => x.Value.Player)
+                .ToList();
+
+            Message message = new Message(nameof(PlayersListMessage), players);
+            message.Id = info.MessageId;
+
+            if(Handlers.ContainsKey(info.EndPoint))
+            {
+                await Handlers[info.EndPoint].Send(message);
+            }
+        }
+
+        public override async void LoadSceneMessage(int sceneIndex, RecieveInfo info)
+        {
+            Message message = new Message(nameof(LoadSceneMessage), sceneIndex);
+            message.Id = info.MessageId;
+
+            await Broadcast(message);
         }
     }
 }

@@ -4,9 +4,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using Networking.Messages;
-using Networking.Messages.Data;
+using Networking.Data;
 using Networking.Services;
-
+using System.Collections.Generic;
 
 namespace Networking.ClientSide
 {
@@ -31,29 +31,44 @@ namespace Networking.ClientSide
 
         public event Action<Player> OnPlayerConntected;
         public event Action<Player> OnPlayerDisconnected;
+        public event Action<Player, string> OnChatMessage;
+
+        public event Action<object[], string> OnRecieveData;
+
+        public event Action<int> OnLoadScene;
 
 
-        public void Start()
+        public async void Start()
         {
             try
             {
+                SafeDebugger.Log($"Client | Connecting...");
                 working = true;
 
-                Task.Run(RecieveLoop);
+                Task recieve = Task.Run(RecieveLoop);
 
-                Send(new Message(nameof(ConnectMessage), player));
-
-                SafeDebugger.Log($"Connecting...");
+                await Send(new Message(nameof(ConnectMessage), player));
             }
             catch(Exception e)
             {
-                SafeDebugger.Log($"Can not connect: {e}");
+                SafeDebugger.Log($"Client | Can not connect: {e}");
             }
         }
-        public void Stop()
+        public async void Stop()
         {
-            Send(new Message(nameof(DisconnectMessage), player));
-            DisconnectMessage(player, serverEndPoint);
+            if (!working)
+                return;
+
+            await Send(new Message(nameof(DisconnectMessage), player));
+            DisconnectMessage(player, new RecieveInfo() { EndPoint = serverEndPoint});
+
+            working = false;
+            try
+            {
+                udpClient.Close();
+                udpClient = null;
+            }
+            catch { }
         }
 
         private async void RecieveLoop()
@@ -65,10 +80,9 @@ namespace Networking.ClientSide
                     await Recieve();
                 }
             }
-            catch(Exception e)
+            catch
             {
-                SafeDebugger.Log($"Exception: {e}");
-                DisconnectMessage(player, serverEndPoint);
+                Stop();
             }
         }
         private async Task Recieve()
@@ -80,36 +94,64 @@ namespace Networking.ClientSide
 
 
             Message message = Message.FromBytes(data);
-            Invoker.Invoke(message.MethodName, Concat(message.GetData(), receivedResult.RemoteEndPoint));
+            RecieveInfo info = new RecieveInfo()
+            {
+                EndPoint = receivedResult.RemoteEndPoint,
+                MessageId = message.Id,
+            };
+            Invoker.Invoke(message.MethodName, Concat(message.GetData(), info));
         }
-        public async void Send(Message message)
+        public async Task Send(Message message)
         {
-            if (!working)
+            if (!working || udpClient == null)
                 return;
 
-            byte[] data = message.ToBytes();
-            await udpClient.SendAsync(data, data.Length, serverEndPoint);
-
-            SafeDebugger.Log($"Send: {message.MethodName} {serverEndPoint}");
+            try
+            {
+                byte[] data = message.ToBytes();
+                await udpClient.SendAsync(data, data.Length, serverEndPoint);
+            }
+            catch(Exception e)
+            {
+                SafeDebugger.Log($"Client | Exception: {e}");
+            }
         }
 
 
-        public override void ConnectMessage(Player player, IPEndPoint endPoint)
+        public override void ConnectMessage(Player player, RecieveInfo info)
         {            
             OnPlayerConntected?.Invoke(player);
-        }
-        public override void DisconnectMessage(Player player, IPEndPoint endPoint)
-        {
-            working = false;
-            udpClient.Close();
 
-            OnPlayerDisconnected?.Invoke(player);
-
-            SafeDebugger.Log("Disconnected.");
+            SafeDebugger.Log($"Client | Player: {player.Name} Connected.");
         }
-        public override void ChatMessage(Player player, string text, IPEndPoint endPoint)
+        public override void DisconnectMessage(Player player, RecieveInfo info)
         {
-            SafeDebugger.Log($"{player.Name}: {text}");
+            if(player.Server)
+            {
+                SafeDebugger.Log($"Client | Server stopped");
+                Stop();
+                return;
+            }
+
+            OnPlayerDisconnected?.Invoke(player);      
+            
+            SafeDebugger.Log($"Client | Player: {player.Name} Disconnected.");
+        }
+        public override void ChatMessage(Player player, string text, RecieveInfo info)
+        {
+            OnChatMessage?.Invoke(player, text);
+
+            SafeDebugger.Log($"Client | {player.Name}: {text}");
+        }
+
+        public override void LoadSceneMessage(int sceneIndex, RecieveInfo info)
+        {
+            OnLoadScene?.Invoke(sceneIndex);
+        }
+
+        public override void PlayersListMessage(List<Player> players, RecieveInfo info)
+        {
+            OnRecieveData?.Invoke(new object[1] { players }, info.MessageId);
         }
     }
 }

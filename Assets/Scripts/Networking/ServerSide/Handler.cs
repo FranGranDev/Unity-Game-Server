@@ -1,5 +1,6 @@
-﻿using Networking.Messages;
-using Networking.Messages.Data;
+﻿using Networking.Data;
+using Networking.Messages;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -8,22 +9,28 @@ namespace Networking.ServerSide
 {
     public class Handler
     {
-        public Handler(UdpClient server, IPEndPoint endPoint, Player player)
+        public Handler(UdpClient server, IPEndPoint endPoint)
         {
             Server = server;
             EndPoint = endPoint;
-            Player = player;
         }
 
-        public Player Player { get; }
+        public Player Player { get; set; }
         public IPEndPoint EndPoint { get; }
         public UdpClient Server { get; }
 
 
-        public async void Send(Message message)
+        public async Task Send(Message message)
         {
-            byte[] data = message.ToBytes();
-            await Server.SendAsync(data, data.Length, EndPoint);
+            if (Server == null)
+                return;
+            
+            try
+            {
+                byte[] data = message.ToBytes();
+                await Server.SendAsync(data, data.Length, EndPoint);
+            }
+            catch { }
         }
 
 

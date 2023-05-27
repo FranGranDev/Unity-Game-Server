@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Net;
 using NaughtyAttributes;
+using Networking.Data;
 using Services;
 using Data;
 
 namespace UI
 {
-    public class MainUI : MonoBehaviour, Initializable
+    public class MainUI : MonoBehaviour, Initializable, IBindable<ILobby>
     {
         [Foldout("Main"), SerializeField] private Transform mainCanvas;
         [Foldout("Main"), SerializeField] private InputUI inputName;
@@ -26,11 +27,18 @@ namespace UI
         [Foldout("Join"), SerializeField] private ButtonUI joinLobbyButton;
         [Foldout("Join"), SerializeField] private ButtonUI joinBackButton;
 
-        [Foldout("Lobby"), SerializeField] private Transform lobbyCanvas; 
+        [Foldout("Lobby"), SerializeField] private Transform lobbyCanvas;
+        [Foldout("Lobby"), SerializeField] private ButtonUI startGameButton;
+        [Foldout("Lobby"), SerializeField] private UIPanel startGamePanel;
+        [Foldout("Lobby"), SerializeField] private ButtonUI leaveLobbyButton;
+        [Foldout("Lobby"), SerializeField] private PlayerList lobbyPlayers;
 
         [Foldout("States"), SerializeField] private States state;
 
         private Dictionary<States, IEnumerable<UIPanel>> menuPanels;
+
+        private ILobby lobby;
+
         public States State
         {
             get => state;
@@ -52,6 +60,9 @@ namespace UI
         public event System.Action<int> OnStartHost;
         public event System.Action<IPAddress, int> OnJoinHost;
 
+        public event System.Action OnStartGame;
+        public event System.Action OnLeaveLobby;
+        
 
         public void Initialize()
         {
@@ -86,15 +97,38 @@ namespace UI
             hostBackButton.OnClick += GoMainMenu;
             joinBackButton.OnClick += GoMainMenu;
 
-
             hostLobbyButton.OnClick += StartHost;
             joinLobbyButton.OnClick += JoinHost;
+
+            startGameButton.OnClick += StartGame;
+            leaveLobbyButton.OnClick += LeaveLobby;
+
 
             this.Delayed(() =>
             {
                 TurnUI(true);
                 State = States.Main;
             }, 0.1f);
+        }
+
+        public void Bind(ILobby lobby)
+        {
+            this.lobby = lobby;
+
+            lobby.OnConnected += OnConnected;
+            lobby.OnDisconnected += OnDisconnected;
+            lobby.OnOtherConnected += OnOtherConnected;
+            lobby.OnOtherDisconnected += OnOtherDisconnected;
+        }
+
+        private void OnDestroy()
+        {
+            if (lobby != null)
+            {
+                lobby.OnConnected -= OnConnected;
+                lobby.OnOtherConnected -= OnOtherConnected;
+                lobby.OnOtherDisconnected -= OnOtherDisconnected;
+            }
         }
 
 
@@ -158,6 +192,10 @@ namespace UI
             }
 
         }
+        private void UpdateStartButton()
+        {
+            startGamePanel.IsShown = lobby.Self.Master && lobby.Others.Count > 0;
+        }
 
 
         private void GoMainMenu()
@@ -183,6 +221,50 @@ namespace UI
             IPAddress address = IPAddress.Parse(SavedData.JoinAddress);
 
             OnJoinHost?.Invoke(address, SavedData.JoinPort);
+        }
+
+
+        private void StartGame()
+        {
+            OnStartGame?.Invoke();
+        }
+        private void LeaveLobby()
+        {
+            OnLeaveLobby?.Invoke();
+        }
+
+
+        private void OnOtherDisconnected(Player player)
+        {
+            lobbyPlayers.RemovePlayer(player);
+
+            UpdateStartButton();
+        }
+        private void OnOtherConnected(Player player)
+        {
+            lobbyPlayers.AddPlayer(player);
+
+            UpdateStartButton();
+        }
+
+        private void OnDisconnected(Player obj)
+        {
+            State = States.Main;
+        }
+        private void OnConnected(Player player)
+        {
+            State = States.Lobby;
+            lobbyPlayers.Clear();
+
+            lobbyPlayers.AddPlayer(player);
+
+            lobby.RequestPlayers(OnGetPlayers);
+
+            UpdateStartButton();
+        }
+        private void OnGetPlayers(List<Player> players)
+        {
+            lobbyPlayers.AddPlayers(players);
         }
 
 

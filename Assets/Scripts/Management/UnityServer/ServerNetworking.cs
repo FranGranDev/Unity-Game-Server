@@ -1,6 +1,6 @@
 using Networking.ServerSide;
 using Networking.ClientSide;
-using Networking.Messages.Data;
+using Networking.Data;
 using UnityEngine;
 using System.Net;
 
