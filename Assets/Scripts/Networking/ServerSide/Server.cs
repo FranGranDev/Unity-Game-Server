@@ -111,6 +111,11 @@ namespace Networking.ServerSide
 
         public override async void ConnectMessage(Player player, RecieveInfo info)
         {
+            if(Handlers.Count >= 2)
+            {
+                return;
+            }
+
             Handler handler = new Handler(udpClient, info.EndPoint);
             handler.Player = player;
             Handlers.Add(info.EndPoint, handler);
@@ -166,6 +171,13 @@ namespace Networking.ServerSide
         {
             Message message = new Message(nameof(LoadSceneMessage), sceneIndex);
             message.Id = info.MessageId;
+
+            await Broadcast(message);
+        }
+
+        public override async void UpdateObject(string id, object data, RecieveInfo info)
+        {
+            Message message = new Message(nameof(UpdateObject), id, data);
 
             await Broadcast(message);
         }

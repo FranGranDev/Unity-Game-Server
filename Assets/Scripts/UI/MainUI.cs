@@ -119,15 +119,21 @@ namespace UI
             lobby.OnDisconnected += OnDisconnected;
             lobby.OnOtherConnected += OnOtherConnected;
             lobby.OnOtherDisconnected += OnOtherDisconnected;
+
+            lobby.OnGetPlayers += OnGetPlayers;
         }
+
 
         private void OnDestroy()
         {
             if (lobby != null)
             {
                 lobby.OnConnected -= OnConnected;
+                lobby.OnDisconnected -= OnDisconnected;
                 lobby.OnOtherConnected -= OnOtherConnected;
                 lobby.OnOtherDisconnected -= OnOtherDisconnected;
+
+                lobby.OnGetPlayers -= OnGetPlayers;
             }
         }
 
@@ -194,7 +200,7 @@ namespace UI
         }
         private void UpdateStartButton()
         {
-            startGamePanel.IsShown = lobby.Self.Master && lobby.Others.Count > 0;
+            startGamePanel.IsShown = lobby.Self.Master && lobby.Players.Count > 0;
         }
 
 
@@ -242,7 +248,8 @@ namespace UI
         }
         private void OnOtherConnected(Player player)
         {
-            lobbyPlayers.AddPlayer(player);
+            lobbyPlayers.Clear();
+            lobbyPlayers.AddPlayers(lobby.Players);
 
             UpdateStartButton();
         }
@@ -258,12 +265,12 @@ namespace UI
 
             lobbyPlayers.AddPlayer(player);
 
-            lobby.RequestPlayers(OnGetPlayers);
-
             UpdateStartButton();
         }
         private void OnGetPlayers(List<Player> players)
         {
+            lobbyPlayers.Clear();
+
             lobbyPlayers.AddPlayers(players);
         }
 

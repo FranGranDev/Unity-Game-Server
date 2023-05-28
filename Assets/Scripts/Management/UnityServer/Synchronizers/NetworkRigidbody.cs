@@ -1,0 +1,39 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using Networking.Data;
+
+
+namespace Management
+{
+    [RequireComponent(typeof(Rigidbody))]
+    public class NetworkRigidbody : NetworkObject
+    {
+        private new Rigidbody rigidbody;
+
+        private void Awake()
+        {
+            rigidbody = GetComponent<Rigidbody>();
+        }
+
+        public override void Synchronize(object data)
+        {
+            try
+            {
+                RigidbodyData rigidbodyData = data as RigidbodyData;
+
+                rigidbody.position = rigidbodyData.Position.GetVector();
+                rigidbody.velocity = rigidbodyData.Velocity.GetVector();
+                rigidbody.angularVelocity = rigidbodyData.Angular.GetVector();
+            }
+            catch { Debug.Log($"Cant convert {data} to RigidbodyData", this); }
+        }
+
+        private void FixedUpdate()
+        {
+            RigidbodyData data = new RigidbodyData(rigidbody);
+
+            CallUpdate(data);
+        }
+    }
+}

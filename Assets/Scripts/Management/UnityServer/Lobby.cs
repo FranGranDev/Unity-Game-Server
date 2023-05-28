@@ -14,7 +14,10 @@ namespace Management
         {
             Self = self;
 
-            Others = new List<Player>();
+            Players = new List<Player>()
+            {
+                Self,
+            };
         }
 
         public bool IsMaster
@@ -25,7 +28,7 @@ namespace Management
             }
         }
         public Player Self { get; set; }
-        public List<Player> Others { get; set; }
+        public List<Player> Players { get; set; }
 
 
         public event Action<Player> OnConnected;
@@ -36,6 +39,8 @@ namespace Management
 
         public event Action<Player, string> OnChatMessage;
 
+        public event Action<List<Player>> OnGetPlayers;
+
         public event Action<Action<List<Player>>> OnRequestPlayers;
 
 
@@ -44,10 +49,17 @@ namespace Management
             if(Self.Equals(player))
             {
                 OnConnected?.Invoke(player);
+
+                if(!Self.Master)
+                {
+                    OnRequestPlayers?.Invoke(GetPlayers);
+                }
             }
             else
             {
                 AddPlayer(player);
+
+                OrderPlayers();
 
                 OnOtherConnected?.Invoke(player);
             }
@@ -61,6 +73,8 @@ namespace Management
             else
             {
                 RemovePlayer(player);
+
+                OrderPlayers();
 
                 OnOtherDisconnected?.Invoke(player);
             }
@@ -77,23 +91,41 @@ namespace Management
 
         private void AddPlayer(Player player)
         {
-            if(Others.FirstOrDefault(x => x.Equals(player)) == null)
+            if(Players.FirstOrDefault(x => x.Equals(player)) == null)
             {
-                Others.Add(player);
+                Players.Add(player);
+
+                OrderPlayers();
             }
         }
         private void RemovePlayer(Player player)
         {
-            if (Others.FirstOrDefault(x => x.Equals(player)) != null)
+            if (Players.FirstOrDefault(x => x.Equals(player)) != null)
             {
-                Others.Remove(player);
+                Players.Remove(player);
+
+                OrderPlayers();
             }
         }
 
-
-        public void RequestPlayers(Action<List<Player>> onGet)
+        private void OrderPlayers()
         {
-            OnRequestPlayers?.Invoke(onGet);
+            Players = Players
+                .OrderBy(x => x.Id)
+                .ToList();
+
+            Players
+                .ForEach(x => x.Index = Players.IndexOf(x));
+        }
+
+
+        public void GetPlayers(List<Player> players)
+        {
+            Players = players;
+
+            OrderPlayers();
+
+            OnGetPlayers?.Invoke(Players);
         }
     }
 }

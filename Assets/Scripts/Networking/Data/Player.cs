@@ -30,6 +30,7 @@ namespace Networking.Data
 
         public string Id { get; set; }
         public string Name { get; set; }
+        public int Index { get; set; }
 
         public bool Master { get; set; }
         public bool Server { get; set; }

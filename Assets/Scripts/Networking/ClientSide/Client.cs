@@ -34,6 +34,7 @@ namespace Networking.ClientSide
         public event Action<Player, string> OnChatMessage;
 
         public event Action<object[], string> OnRecieveData;
+        public event Action<string, object> OnUpdateObject;
 
         public event Action<int> OnLoadScene;
 
@@ -152,6 +153,12 @@ namespace Networking.ClientSide
         public override void PlayersListMessage(List<Player> players, RecieveInfo info)
         {
             OnRecieveData?.Invoke(new object[1] { players }, info.MessageId);
+        }
+
+
+        public override void UpdateObject(string id, object data, RecieveInfo info)
+        {
+            OnUpdateObject?.Invoke(id, data);
         }
     }
 }

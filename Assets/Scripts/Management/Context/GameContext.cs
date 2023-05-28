@@ -66,5 +66,12 @@ namespace Management
             InitializeService.Bind(scene, server);
             InitializeService.Bind<ILobby>(scene, Lobby);
         }
+
+        public void Visited(GameSceneContext scene)
+        {
+            InitializeService.Bind(scene, client);
+
+            InitializeService.Bind<ILobby>(scene, Lobby);
+        }
     }
 }

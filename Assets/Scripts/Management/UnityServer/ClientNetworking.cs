@@ -16,7 +16,7 @@ namespace Management
 
         private Dictionary<string, Delegate> delayedActions;
 
-
+        public event Action<string, object> OnUpdateObject;
         public event Action<int> OnLoadScene; 
 
 
@@ -38,6 +38,8 @@ namespace Management
             client.OnLoadScene += CallOnLoadScene;
 
             client.OnRecieveData += OnRecieveData;
+
+            client.OnUpdateObject += CallOnUpdateObject;
         }
 
         private void SubscribeToLobby()
@@ -85,7 +87,6 @@ namespace Management
 
             await client.Send(message);
         }
-
         public async void GetPlayersList(Action<List<Player>> onRecieve)
         {
             Message message = new Message(nameof(client.RequestPlayersList));
@@ -94,6 +95,13 @@ namespace Management
 
             await client.Send(message);
         }
+        public async void UpdateObject(string id, object data)
+        {
+            Message message = new Message(nameof(client.UpdateObject), id, data);
+
+            await client.Send(message);
+        }
+
 
 
         private void CallPlayerConnected(Player player)
@@ -125,8 +133,13 @@ namespace Management
                 OnLoadScene?.Invoke(index);
             });
         }
-
-
+        private void CallOnUpdateObject(string id, object data)
+        {
+            UnityMainThreadDispatcher.Execute(() =>
+            {
+                OnUpdateObject?.Invoke(id, data);
+            });
+        }
         private void OnRecieveData(object[] data, string id)
         {
             if(delayedActions.ContainsKey(id))

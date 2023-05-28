@@ -66,7 +66,15 @@ public static class Extentions
         return Random.Range(min, max);
     }
 
+    public static object[] Concat(object[] args, object arg)
+    {
+        object[] data = new object[args.Length + 1];
 
+        args.CopyTo(data, 0);
+        data[data.Length - 1] = arg;
+
+        return data;
+    }
 
     public static string ShortConvert(this int value)
     {

@@ -74,5 +74,11 @@ namespace Networking.Services
         {
 
         }
+
+        [NetworkMethod(nameof(UpdateObject))]
+        public virtual void UpdateObject(string id, object data, RecieveInfo info)
+        {
+
+        }
     }
 }

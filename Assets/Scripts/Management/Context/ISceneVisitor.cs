@@ -7,5 +7,6 @@ namespace Management
     public interface ISceneVisitor
     {
         public void Visited(MenuSceneContext sceneContext);
+        public void Visited(GameSceneContext sceneContext);
     }
 }
