@@ -33,10 +33,13 @@ namespace Networking.ClientSide
         public event Action<Player> OnPlayerDisconnected;
         public event Action<Player, string> OnChatMessage;
 
+
         public event Action<object[], string> OnRecieveData;
         public event Action<string, object> OnUpdateObject;
 
         public event Action<int> OnLoadScene;
+        public event Action OnStartRound;
+        public event Action<Player> OnEndRound;
 
 
         public async void Start()
@@ -149,10 +152,19 @@ namespace Networking.ClientSide
         {
             OnLoadScene?.Invoke(sceneIndex);
         }
-
         public override void PlayersListMessage(List<Player> players, RecieveInfo info)
         {
             OnRecieveData?.Invoke(new object[1] { players }, info.MessageId);
+        }
+
+
+        public override void StartRoundMessage(RecieveInfo info)
+        {
+            OnStartRound?.Invoke();
+        }
+        public override void EndRoundMessage(Player looser, RecieveInfo info)
+        {
+            OnEndRound?.Invoke(looser);
         }
 
 

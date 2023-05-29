@@ -7,21 +7,17 @@ namespace Management
 {
     public abstract class NetworkObject : MonoBehaviour
     {
-        public string Id { get; private set; } = "null";
+        public string Id { get; set; } = System.Guid.NewGuid().ToString();
         public bool Mine { get; set; }
+        public abstract object Data { get; }
 
-        public event System.Action<string, object> OnUpdated;
 
 
         public void SetId(Player player)
         {
             Id = $"{player.Id}_{name}";
         }
-
-        protected void CallUpdate(object data)
-        {
-            OnUpdated?.Invoke(Id, data);
-        }
+        
         public abstract void Synchronize(object data);
     }
 }

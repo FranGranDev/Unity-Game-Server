@@ -11,6 +11,16 @@ namespace Management
     {
         private new Rigidbody rigidbody;
 
+
+        public override object Data
+        {
+            get
+            {
+                return new RigidbodyData(rigidbody);
+            }
+        }
+
+
         private void Awake()
         {
             rigidbody = GetComponent<Rigidbody>();
@@ -27,13 +37,6 @@ namespace Management
                 rigidbody.angularVelocity = rigidbodyData.Angular.GetVector();
             }
             catch { Debug.Log($"Cant convert {data} to RigidbodyData", this); }
-        }
-
-        private void FixedUpdate()
-        {
-            RigidbodyData data = new RigidbodyData(rigidbody);
-
-            CallUpdate(data);
         }
     }
 }

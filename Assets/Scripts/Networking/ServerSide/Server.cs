@@ -174,12 +174,25 @@ namespace Networking.ServerSide
 
             await Broadcast(message);
         }
+        public override async void StartRoundMessage(RecieveInfo info)
+        {
+            Message message = new Message(nameof(StartRoundMessage));
+
+            await Broadcast(message);
+        }
+        public override async void EndRoundMessage(Player looser, RecieveInfo info)
+        {
+            Message message = new Message(nameof(EndRoundMessage), looser);
+
+            await Broadcast(message);
+        }
+
 
         public override async void UpdateObject(string id, object data, RecieveInfo info)
         {
             Message message = new Message(nameof(UpdateObject), id, data);
 
-            await Broadcast(message);
+            await Broadcast(message, info.EndPoint);
         }
     }
 }

@@ -8,28 +8,28 @@ public class Racket : MonoBehaviour
     [SerializeField] private float speed;
     [Header("Components")]
     [SerializeField] private Rigidbody racket;
+    [SerializeField] private MeshRenderer meshRenderer;
     [Space]
     [SerializeField] private Transform leftPoint;
     [SerializeField] private Transform rightPoint;
 
 
-    private float positionX = 0;
-
-    public Rigidbody Rigidbody => racket;
+    public float PositionX { get; set; } = 0;
+    public Color Color { get => meshRenderer.sharedMaterial.color; }
 
 
     public void Move(float delta)
     {
-        positionX += delta * speed;
+        PositionX += delta * speed;
 
-        positionX = Mathf.Clamp(positionX, leftPoint.localPosition.x, rightPoint.localPosition.x);
+        PositionX = Mathf.Clamp(PositionX, leftPoint.localPosition.x, rightPoint.localPosition.x);
     }
 
 
     private void FixedUpdate()
     {
         Vector3 position = racket.transform.localPosition;
-        position.x = positionX;
+        position.x = PositionX;
 
         racket.transform.localPosition = position;
     }

@@ -200,7 +200,7 @@ namespace UI
         }
         private void UpdateStartButton()
         {
-            startGamePanel.IsShown = lobby.Self.Master && lobby.Players.Count > 0;
+            startGamePanel.IsShown = lobby.Self.Master && lobby.Players.Count > 1;
         }
 
 

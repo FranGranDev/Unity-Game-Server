@@ -1,6 +1,6 @@
 {
     "name": "Services",
-    "rootNamespace": "",
+    "rootNamespace": "Services",
     "references": [
         "GUID:23dab59714f7d9d48b436de21cfbe17b"
     ],

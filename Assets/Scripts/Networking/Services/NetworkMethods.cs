@@ -69,11 +69,27 @@ namespace Networking.Services
         {
 
         }
+
         [NetworkMethod(nameof(PlayersListMessage))]
         public virtual void PlayersListMessage(List<Player> players, RecieveInfo info)
         {
 
         }
+
+
+        [NetworkMethod(nameof(StartRoundMessage))]
+        public virtual void StartRoundMessage(RecieveInfo info)
+        {
+
+        }
+
+        [NetworkMethod(nameof(EndRoundMessage))]
+        public virtual void EndRoundMessage(Player winner, RecieveInfo info)
+        {
+
+        }
+
+
 
         [NetworkMethod(nameof(UpdateObject))]
         public virtual void UpdateObject(string id, object data, RecieveInfo info)

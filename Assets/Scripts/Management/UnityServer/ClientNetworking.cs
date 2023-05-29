@@ -16,6 +16,8 @@ namespace Management
 
         private Dictionary<string, Delegate> delayedActions;
 
+        public event Action OnRoundStarted;
+        public event Action<Player> OnRoundEnded;
         public event Action<string, object> OnUpdateObject;
         public event Action<int> OnLoadScene; 
 
@@ -35,31 +37,25 @@ namespace Management
             client.OnPlayerDisconnected += CallPlayerDisconnected;
             client.OnChatMessage += CallChatMessage;
 
-            client.OnLoadScene += CallOnLoadScene;
+            client.OnLoadScene += CallLoadScene;
+            client.OnEndRound += CallRoundEnded;
+            client.OnStartRound += CallRoundStarted;
 
-            client.OnRecieveData += OnRecieveData;
-
-            client.OnUpdateObject += CallOnUpdateObject;
+            client.OnRecieveData += CallDataRecieved;
+            client.OnUpdateObject += CallUpdateObject;
         }
-
         private void SubscribeToLobby()
         {
             lobby.OnRequestPlayers += GetPlayersList;
         }
 
 
-        /// <summary>
-        /// Use this to start master Client
-        /// </summary>
         public void StartMasterClient(int port)
         {
             player.Master = true;
 
             StartRemoteClient(IPAddress.Parse("127.0.0.1"), port);
         }
-        /// <summary>
-        /// Use this to start remote Client
-        /// </summary>
         public void StartRemoteClient(IPAddress address, int port)
         {
             client = new Client(player, address, port);
@@ -68,9 +64,6 @@ namespace Management
 
             client.Start();
         }
-        /// <summary>
-        /// Stop client work
-        /// </summary>
         public void StopClient()
         {
             if (client == null)
@@ -83,12 +76,16 @@ namespace Management
 
         public async void LoadScene(int index)
         {
+            if (client == null)
+                return;
             Message message = new Message(nameof(client.LoadSceneMessage), index);
 
             await client.Send(message);
         }
         public async void GetPlayersList(Action<List<Player>> onRecieve)
         {
+            if (client == null)
+                return;
             Message message = new Message(nameof(client.RequestPlayersList));
 
             delayedActions.Add(message.Id, onRecieve);
@@ -97,7 +94,26 @@ namespace Management
         }
         public async void UpdateObject(string id, object data)
         {
+            if (client == null)
+                return;
             Message message = new Message(nameof(client.UpdateObject), id, data);
+
+            await client.Send(message);
+        }
+
+        public async void StartRound()
+        {
+            if (client == null)
+                return;
+            Message message = new Message(nameof(client.StartRoundMessage));
+
+            await client.Send(message);
+        }
+        public async void EndRound(Player player)
+        {
+            if (client == null)
+                return;
+            Message message = new Message(nameof(client.EndRoundMessage), player);
 
             await client.Send(message);
         }
@@ -126,21 +142,37 @@ namespace Management
             });
         }
 
-        private void CallOnLoadScene(int index)
+        private void CallLoadScene(int index)
         {
             UnityMainThreadDispatcher.Execute(() =>
             {
                 OnLoadScene?.Invoke(index);
             });
         }
-        private void CallOnUpdateObject(string id, object data)
+        private void CallRoundStarted()
+        {
+            UnityMainThreadDispatcher.Execute(() =>
+            {
+                OnRoundStarted?.Invoke();
+            });
+        }
+        private void CallRoundEnded(Player looser)
+        {
+            UnityMainThreadDispatcher.Execute(() =>
+            {
+                OnRoundEnded?.Invoke(looser);
+            });
+        }
+
+
+        private void CallUpdateObject(string id, object data)
         {
             UnityMainThreadDispatcher.Execute(() =>
             {
                 OnUpdateObject?.Invoke(id, data);
             });
         }
-        private void OnRecieveData(object[] data, string id)
+        private void CallDataRecieved(object[] data, string id)
         {
             if(delayedActions.ContainsKey(id))
             {
