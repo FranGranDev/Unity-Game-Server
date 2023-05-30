@@ -37,6 +37,8 @@ public class UnityMainThreadDispatcher : MonoBehaviour {
 		}
 	}
 
+
+
 	/// <summary>
 	/// Locks the queue and adds the IEnumerator to the queue
 	/// </summary>
@@ -86,6 +88,7 @@ public class UnityMainThreadDispatcher : MonoBehaviour {
 	IEnumerator ActionWrapper(Action a)
 	{
 		a();
+
 		yield return null;
 	}
 

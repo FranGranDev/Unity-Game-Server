@@ -26,7 +26,7 @@ public class GameCamera : MonoBehaviour
             Vector3 direction = (target.transform.position - transform.position).normalized;
             Quaternion rotation = Quaternion.Lerp(startRotation, Quaternion.LookRotation(direction, Vector3.up), ratio);
 
-            transform.rotation = Quaternion.Lerp(transform.rotation, rotation, 0.25f);
+            transform.rotation = Quaternion.Lerp(transform.rotation, rotation, 0.1f);
         }
         if(moveTarget)
         {

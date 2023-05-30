@@ -70,7 +70,7 @@ namespace Management
         public void Visited(GameSceneContext scene)
         {
             InitializeService.Bind(scene, client);
-
+            InitializeService.Bind(scene, server);
             InitializeService.Bind<ILobby>(scene, Lobby);
         }
     }

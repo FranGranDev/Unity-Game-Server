@@ -174,9 +174,9 @@ namespace Networking.ServerSide
 
             await Broadcast(message);
         }
-        public override async void StartRoundMessage(RecieveInfo info)
+        public override async void StartRoundMessage(Dictionary<string, int> score, RecieveInfo info)
         {
-            Message message = new Message(nameof(StartRoundMessage));
+            Message message = new Message(nameof(StartRoundMessage), score);
 
             await Broadcast(message);
         }

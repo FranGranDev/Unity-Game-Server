@@ -16,7 +16,7 @@ namespace Management
 
         private Dictionary<string, Delegate> delayedActions;
 
-        public event Action OnRoundStarted;
+        public event Action<Dictionary<string, int>> OnRoundStarted;
         public event Action<Player> OnRoundEnded;
         public event Action<string, object> OnUpdateObject;
         public event Action<int> OnLoadScene; 
@@ -71,6 +71,7 @@ namespace Management
 
             client.Stop();
             delayedActions.Clear();
+            lobby.Restart();
         }
 
 
@@ -101,11 +102,11 @@ namespace Management
             await client.Send(message);
         }
 
-        public async void StartRound()
+        public async void StartRound(Dictionary<string, int> score)
         {
             if (client == null)
                 return;
-            Message message = new Message(nameof(client.StartRoundMessage));
+            Message message = new Message(nameof(client.StartRoundMessage), score);
 
             await client.Send(message);
         }
@@ -149,11 +150,11 @@ namespace Management
                 OnLoadScene?.Invoke(index);
             });
         }
-        private void CallRoundStarted()
+        private void CallRoundStarted(Dictionary<string, int> score)
         {
             UnityMainThreadDispatcher.Execute(() =>
             {
-                OnRoundStarted?.Invoke();
+                OnRoundStarted?.Invoke(score);
             });
         }
         private void CallRoundEnded(Player looser)

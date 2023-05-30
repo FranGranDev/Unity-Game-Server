@@ -78,7 +78,7 @@ namespace Networking.Services
 
 
         [NetworkMethod(nameof(StartRoundMessage))]
-        public virtual void StartRoundMessage(RecieveInfo info)
+        public virtual void StartRoundMessage(Dictionary<string, int> score, RecieveInfo info)
         {
 
         }

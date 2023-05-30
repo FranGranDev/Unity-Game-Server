@@ -44,6 +44,14 @@ namespace Management
         public event Action<Action<List<Player>>> OnRequestPlayers;
 
 
+        public void Restart()
+        {
+            Players = new List<Player>()
+            {
+                Self,
+            };
+        }
+
         public void OnPlayerConnected(Player player)
         {
             if(Self.Equals(player))

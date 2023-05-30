@@ -35,7 +35,7 @@ namespace Management
         }
 
 
-        private void FixedUpdate()
+        private void Update()
         {
             localObjects.Values
                 .ToList()

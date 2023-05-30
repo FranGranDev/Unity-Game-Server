@@ -38,7 +38,7 @@ namespace Networking.ClientSide
         public event Action<string, object> OnUpdateObject;
 
         public event Action<int> OnLoadScene;
-        public event Action OnStartRound;
+        public event Action<Dictionary<string, int>> OnStartRound;
         public event Action<Player> OnEndRound;
 
 
@@ -158,9 +158,9 @@ namespace Networking.ClientSide
         }
 
 
-        public override void StartRoundMessage(RecieveInfo info)
+        public override void StartRoundMessage(Dictionary<string, int> score, RecieveInfo info)
         {
-            OnStartRound?.Invoke();
+            OnStartRound?.Invoke(score);
         }
         public override void EndRoundMessage(Player looser, RecieveInfo info)
         {

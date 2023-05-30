@@ -2,6 +2,8 @@ using Networking.Data;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
+using TMPro;
 
 
 namespace Game
@@ -11,6 +13,7 @@ namespace Game
         [Header("Components")]
         [SerializeField] private Racket racket;
         [SerializeField] private new Camera camera;
+        [SerializeField] private TextMeshPro score;
         [Space]
         [SerializeField] private Trigger loseTrigger;
 
@@ -38,8 +41,17 @@ namespace Game
             {
                 racket.gameObject.AddComponent<RacketController>();
             }
+            else
+            {
+                score.gameObject.SetActive(false);
+            }
         }
+        public void UpdateScore(Dictionary<string, int> data)
+        {
+            string otherPlayer = data.Keys.First(x => !x.Equals(Player.Id));
 
+            score.text = $"{data[otherPlayer]}:{data[Player.Id]}";
+        }
 
 
         private void OnBallEnter(Collider obj)

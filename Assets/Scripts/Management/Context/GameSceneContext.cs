@@ -4,13 +4,15 @@ using Networking.Data;
 using System.Collections.Generic;
 using UnityEngine;
 using Services;
+using UI;
 using Game;
-
+using UnityEngine.SceneManagement;
 
 namespace Management
 {
-    public class GameSceneContext : SceneContext, IBindable<ClientNetworking>, IBindable<ILobby>, IGameEvents
+    public class GameSceneContext : SceneContext, IBindable<ClientNetworking>, IBindable<ServerNetworking>, IBindable<ILobby>, IGameEvents
     {
+        [SerializeField] private GameUI gameUI;
         [SerializeField] private List<PlayerHandler> playerHandlers;
         [SerializeField] private Ball ball;
         [Space]
@@ -18,30 +20,32 @@ namespace Management
 
 
         private ClientNetworking client;
+        private ServerNetworking server;
         private ILobby lobby;
+
+        private Dictionary<string, int> score;
 
 
         public event System.Action OnStart;
         public event System.Action OnEnd;
-        public event System.Action OnRestart;
 
 
         protected override void Initialize()
         {
             InitializeService.Bind<IGameEvents>(this, this);
 
-            SubscribeToNetwork();
+            gameUI.Initialize(lobby.IsMaster);
+
             SetupSynchronize();
 
             CallStartRound(1f);
-        }
-        private void SubscribeToNetwork()
-        {
-            client.OnRoundStarted += StartRound;
-            client.OnRoundEnded += EndRound;
+
+            gameUI.OnExit += Exit;
+            gameUI.OnRestart += Restart;
         }
         private void SetupSynchronize()
         {
+            score = new Dictionary<string, int>();
 
             foreach (Player player in lobby.Players)
             {
@@ -60,6 +64,8 @@ namespace Management
                     });
 
                 handler.OnLose += OnPlayerLose;
+
+                score.Add(player.Id, 0);
             }
 
             Player master = lobby.Players.FirstOrDefault(x => x.Master);
@@ -79,27 +85,42 @@ namespace Management
         }
 
 
+        public void Bind(ServerNetworking obj)
+        {
+            server = obj;
+        }
         public void Bind(ClientNetworking obj)
         {
             client = obj;
 
             client.OnUpdateObject += UpdateObject;
+            client.OnRoundStarted += StartRound;
+            client.OnRoundEnded += EndRound;
         }
         public void Bind(ILobby obj)
         {
             lobby = obj;
         }
-
-
-        private void StartRound()
+        private void OnDestroy()
         {
+            client.OnUpdateObject -= UpdateObject;
+            client.OnRoundStarted -= StartRound;
+            client.OnRoundEnded -= EndRound;
+        }
+
+
+        private void StartRound(Dictionary<string, int> score)
+        {
+            this.score = score;
+
+            playerHandlers.ForEach(x => x.UpdateScore(score));
+
             OnStart?.Invoke();
         }
         private void EndRound(Player looser)
         {
             OnEnd?.Invoke();
 
-            //check if game end
             CallStartRound(1f);
         }
 
@@ -109,7 +130,7 @@ namespace Management
             {
                 this.Delayed(() =>
                 {
-                    client.StartRound();
+                    client.StartRound(score);
                 }, delay);
             }
         }
@@ -118,6 +139,8 @@ namespace Management
         {
             if (lobby.IsMaster)
             {
+                score[player.Id]++;
+
                 client.EndRound(player);
             }
         }
@@ -135,9 +158,22 @@ namespace Management
 
 
 
+        private void Restart()
+        {
+            client.LoadScene(1);
+        }
+        private void Exit()
+        {
+            server.StopServer();
+            client.StopClient();
+
+            SceneManager.LoadScene(0);
+        }
+
         public override void Visit(ISceneVisitor visitor)
         {
             visitor.Visited(this);
         }
+
     }
 }

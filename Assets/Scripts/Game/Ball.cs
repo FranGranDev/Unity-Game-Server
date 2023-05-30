@@ -34,9 +34,12 @@ namespace Game
             }
         }
 
+        private IGameEvents gameEvents;
 
         public void Bind(IGameEvents obj)
         {
+            gameEvents = obj;
+
             obj.OnStart += StartGame;
             obj.OnEnd += EndGame;
         }
@@ -118,5 +121,11 @@ namespace Game
             WallReflect(collision.GetContact(0).normal);
         }
 
+
+        private void OnDestroy()
+        {
+            gameEvents.OnEnd -= EndGame;
+            gameEvents.OnStart -= StartGame;
+        }
     }
 }
