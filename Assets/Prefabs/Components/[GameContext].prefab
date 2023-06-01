@@ -54,8 +54,6 @@ GameObject:
   m_Component:
   - component: {fileID: 8073546287810113978}
   - component: {fileID: 7620324090555800253}
-  - component: {fileID: 3142716910741320614}
-  - component: {fileID: 386467638789075567}
   m_Layer: 0
   m_Name: '[GameContext]'
   m_TagString: Untagged
@@ -89,31 +87,5 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1d234fea5a02aae42bf2e565ce67e2e6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  client: {fileID: 3142716910741320614}
-  server: {fileID: 386467638789075567}
---- !u!114 &3142716910741320614
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8073546287810113977}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 128222148d1d5c64b88640e97d532820, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &386467638789075567
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8073546287810113977}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 43a05953444f1ad49bdbbe8b7a5357ae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

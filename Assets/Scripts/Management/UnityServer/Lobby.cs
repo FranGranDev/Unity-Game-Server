@@ -4,11 +4,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using Networking.Data;
 using System.Linq;
-
+using Services;
+using Networking.Server;
+using Cysharp.Threading.Tasks;
 
 namespace Management
 {
-    public class Lobby : ILobby
+    public class Lobby : ILobby, IBindable<Client>
     {
         public Lobby(Player self)
         {
@@ -19,6 +21,8 @@ namespace Management
                 Self,
             };
         }
+
+        private Client client;
 
         public bool IsMaster
         {
@@ -39,11 +43,17 @@ namespace Management
 
         public event Action<Player, string> OnChatMessage;
 
-        public event Action<List<Player>> OnGetPlayers;
 
-        public event Action<Action<List<Player>>> OnRequestPlayers;
+        public void Bind(Client client)
+        {
+            this.client = client;
 
+            client.OnPlayerConntected += OnPlayerConnected;
+            client.OnPlayerDisconnected += OnPlayerDisconnected;
+            client.OnChatMessage += OnPlayerChatMessage;
 
+            client.OnStopped += (x) => Restart();
+        }
         public void Restart()
         {
             Players = new List<Player>()
@@ -52,16 +62,18 @@ namespace Management
             };
         }
 
-        public void OnPlayerConnected(Player player)
+
+        public async void OnPlayerConnected(Player player)
         {
             if(Self.Equals(player))
             {
-                OnConnected?.Invoke(player);
-
                 if(!Self.Master)
                 {
-                    OnRequestPlayers?.Invoke(GetPlayers);
+                    Players = await client.GetPlayerList();
+                    OrderPlayers();
                 }
+
+                OnConnected?.Invoke(player);
             }
             else
             {
@@ -124,16 +136,6 @@ namespace Management
 
             Players
                 .ForEach(x => x.Index = Players.IndexOf(x));
-        }
-
-
-        public void GetPlayers(List<Player> players)
-        {
-            Players = players;
-
-            OrderPlayers();
-
-            OnGetPlayers?.Invoke(Players);
         }
     }
 }

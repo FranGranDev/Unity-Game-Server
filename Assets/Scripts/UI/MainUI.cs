@@ -7,6 +7,7 @@ using Networking.Data;
 using Services;
 using Data;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 
 namespace UI
 {
@@ -61,6 +62,7 @@ namespace UI
         public event System.Action<int> OnStartHost;
         public event System.Action<IPAddress, int> OnJoinHost;
 
+
         public event System.Action OnStartGame;
         public event System.Action OnLeaveLobby;
         
@@ -104,8 +106,7 @@ namespace UI
             startGameButton.OnClick += StartGame;
             leaveLobbyButton.OnClick += LeaveLobby;
 
-
-            await Task.Delay(100);
+            await UniTask.Delay(100);
 
             TurnUI(true);
             State = States.Main;
@@ -119,8 +120,6 @@ namespace UI
             lobby.OnDisconnected += OnDisconnected;
             lobby.OnOtherConnected += OnOtherConnected;
             lobby.OnOtherDisconnected += OnOtherDisconnected;
-
-            lobby.OnGetPlayers += OnGetPlayers;
         }
 
 
@@ -132,8 +131,6 @@ namespace UI
                 lobby.OnDisconnected -= OnDisconnected;
                 lobby.OnOtherConnected -= OnOtherConnected;
                 lobby.OnOtherDisconnected -= OnOtherDisconnected;
-
-                lobby.OnGetPlayers -= OnGetPlayers;
             }
         }
 
@@ -164,6 +161,8 @@ namespace UI
         private void ChangePlayerName(string name)
         {
             SavedData.PlayerName = name;
+
+            lobby.Self.Name = name;
         }
         private void ChangePortNumber(string name)
         {
@@ -263,17 +262,10 @@ namespace UI
             State = States.Lobby;
             lobbyPlayers.Clear();
 
-            lobbyPlayers.AddPlayer(player);
+            lobbyPlayers.AddPlayers(lobby.Players);
 
             UpdateStartButton();
         }
-        private void OnGetPlayers(List<Player> players)
-        {
-            lobbyPlayers.Clear();
-
-            lobbyPlayers.AddPlayers(players);
-        }
-
 
         public enum States
         {

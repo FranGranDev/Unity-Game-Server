@@ -43,22 +43,22 @@ namespace Networking.Services
         }
 
 
-        [NetworkMethod(nameof(ConnectMessage))]
-        public virtual void ConnectMessage(Player player, RecieveInfo info)
+        [NetworkMethod(nameof(Connect))]
+        public virtual void Connect(Player player, RecieveInfo info)
         {
 
         }
 
 
-        [NetworkMethod(nameof(DisconnectMessage))]
-        public virtual void DisconnectMessage(Player player, RecieveInfo info)
+        [NetworkMethod(nameof(Disconnect))]
+        public virtual void Disconnect(Player player, RecieveInfo info)
         {
 
         }
 
 
-        [NetworkMethod(nameof(LoadSceneMessage))]
-        public virtual void LoadSceneMessage(int sceneIndex, RecieveInfo info)
+        [NetworkMethod(nameof(LoadScene))]
+        public virtual void LoadScene(int sceneIndex, RecieveInfo info)
         {
 
         }
@@ -70,21 +70,21 @@ namespace Networking.Services
 
         }
 
-        [NetworkMethod(nameof(PlayersListMessage))]
-        public virtual void PlayersListMessage(List<Player> players, RecieveInfo info)
+        [NetworkMethod(nameof(PlayersList))]
+        public virtual void PlayersList(List<Player> players, RecieveInfo info)
         {
 
         }
 
 
-        [NetworkMethod(nameof(StartRoundMessage))]
-        public virtual void StartRoundMessage(Dictionary<string, int> score, RecieveInfo info)
+        [NetworkMethod(nameof(StartRound))]
+        public virtual void StartRound(Dictionary<string, int> score, RecieveInfo info)
         {
 
         }
 
-        [NetworkMethod(nameof(EndRoundMessage))]
-        public virtual void EndRoundMessage(Player winner, RecieveInfo info)
+        [NetworkMethod(nameof(EndRound))]
+        public virtual void EndRound(Player winner, RecieveInfo info)
         {
 
         }

@@ -1,17 +1,18 @@
 using Game;
 using Networking.Data;
+using Networking.Server;
+using Networking.Messages;
 using Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using UI;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
 namespace Management
 {
-    public class GameSceneContext : SceneContext, IBindable<ClientNetworking>, IBindable<ServerNetworking>, IBindable<ILobby>, IGameEvents
+    public class GameSceneContext : SceneContext, IBindable<Client>, IBindable<Server>, IBindable<ILobby>, IGameEvents
     {
         [SerializeField] private GameUI gameUI;
         [SerializeField] private List<PlayerHandler> playerHandlers;
@@ -20,8 +21,8 @@ namespace Management
         [SerializeField] private ObjectSynchronizer objectSynchronizer;
 
 
-        private ClientNetworking client;
-        private ServerNetworking server;
+        private Client client;
+        private Server server;
         private ILobby lobby;
 
         private Dictionary<string, int> score;
@@ -85,17 +86,17 @@ namespace Management
         }
 
 
-        public void Bind(ServerNetworking obj)
+        public void Bind(Server obj)
         {
             server = obj;
         }
-        public void Bind(ClientNetworking obj)
+        public void Bind(Client obj)
         {
             client = obj;
 
             client.OnUpdateObject += UpdateObject;
-            client.OnRoundStarted += StartRound;
-            client.OnRoundEnded += EndRound;
+            client.OnStartRound += StartRound;
+            client.OnEndRound += EndRound;
         }
         public void Bind(ILobby obj)
         {
@@ -104,8 +105,8 @@ namespace Management
         private void OnDestroy()
         {
             client.OnUpdateObject -= UpdateObject;
-            client.OnRoundStarted -= StartRound;
-            client.OnRoundEnded -= EndRound;
+            client.OnStartRound -= StartRound;
+            client.OnEndRound -= EndRound;
         }
 
 
@@ -130,25 +131,25 @@ namespace Management
             {
                 await Task.Delay(Mathf.RoundToInt(delay * 1000));
 
-                client.StartRound(score);
+                await client.Send(nameof(client.StartRound), score);
             }
         }
 
-        private void OnPlayerLose(Player player)
+        private async void OnPlayerLose(Player player)
         {
             if (lobby.IsMaster)
             {
                 score[player.Id]++;
 
-                client.EndRound(player);
+                await client.Send(nameof(client.EndRound), player);
             }
         }
 
 
 
-        private void OnObjectUpdated(string id, object data)
+        private async void OnObjectUpdated(string id, object data)
         {
-            client.UpdateObject(id, data);
+            await client.Send(nameof(client.UpdateObject), id, data);
         }
         private void UpdateObject(string id, object data)
         {
@@ -157,14 +158,14 @@ namespace Management
 
 
 
-        private void Restart()
+        private async void Restart()
         {
-            client.LoadScene(1);
+            await client.Send(nameof(client.LoadScene), 1);
         }
         private void Exit()
         {
-            server.StopServer();
-            client.StopClient();
+            server.Stop();
+            client.Stop();
 
             SceneManager.LoadScene(0);
         }

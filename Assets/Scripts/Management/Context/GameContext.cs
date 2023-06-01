@@ -6,6 +6,7 @@ using Services;
 using Networking;
 using Data;
 using Networking.Data;
+using Networking.Server;
 
 namespace Management
 {
@@ -31,10 +32,9 @@ namespace Management
             InitializeComponents();
         }
 
-        [SerializeField] private ClientNetworking client;
-        [SerializeField] private ServerNetworking server;
-
-        public Lobby Lobby { get; private set; }
+        private Client client;
+        private Server server;
+        private Lobby lobby;
 
 
         private void SetupGame()
@@ -43,9 +43,13 @@ namespace Management
         }
         private void InitializeComponents()
         {
-            Lobby = new Lobby(new Player(SavedData.PlayerName));
+            client = new Client();
+            server = new Server();
 
-            client.Initialize(Lobby);
+            lobby = new Lobby(new Player(SavedData.PlayerName));
+            lobby.Bind(client);
+
+            client.SetPlayer(lobby.Self);
 
             client.OnLoadScene += LoadScene;
         }
@@ -64,14 +68,14 @@ namespace Management
         {
             InitializeService.Bind(scene, client);
             InitializeService.Bind(scene, server);
-            InitializeService.Bind<ILobby>(scene, Lobby);
+            InitializeService.Bind<ILobby>(scene, lobby);
         }
 
         public void Visited(GameSceneContext scene)
         {
             InitializeService.Bind(scene, client);
             InitializeService.Bind(scene, server);
-            InitializeService.Bind<ILobby>(scene, Lobby);
+            InitializeService.Bind<ILobby>(scene, lobby);
         }
     }
 }

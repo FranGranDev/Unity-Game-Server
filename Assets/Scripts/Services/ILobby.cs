@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using Networking.Data;
 using System.Collections.Generic;
 
@@ -15,6 +16,4 @@ public interface ILobby
     public event System.Action<Player> OnOtherDisconnected;
 
     public event System.Action<Player, string> OnChatMessage;
-
-    public event System.Action<List<Player>> OnGetPlayers;
 }

@@ -2,7 +2,8 @@
     "name": "Services",
     "rootNamespace": "Services",
     "references": [
-        "GUID:23dab59714f7d9d48b436de21cfbe17b"
+        "GUID:23dab59714f7d9d48b436de21cfbe17b",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
