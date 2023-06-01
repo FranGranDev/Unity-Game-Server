@@ -1,11 +1,12 @@
-using System.Collections;
-using System.Linq;
-using Networking.Data;
-using System.Collections.Generic;
-using UnityEngine;
-using Services;
-using UI;
 using Game;
+using Networking.Data;
+using Services;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using UI;
+using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
 namespace Management
@@ -24,7 +25,6 @@ namespace Management
         private ILobby lobby;
 
         private Dictionary<string, int> score;
-
 
         public event System.Action OnStart;
         public event System.Action OnEnd;
@@ -124,14 +124,13 @@ namespace Management
             CallStartRound(1f);
         }
 
-        private void CallStartRound(float delay)
+        private async void CallStartRound(float delay)
         {
             if (lobby.IsMaster)
             {
-                this.Delayed(() =>
-                {
-                    client.StartRound(score);
-                }, delay);
+                await Task.Delay(Mathf.RoundToInt(delay * 1000));
+
+                client.StartRound(score);
             }
         }
 

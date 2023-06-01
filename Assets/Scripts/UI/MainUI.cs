@@ -6,6 +6,7 @@ using NaughtyAttributes;
 using Networking.Data;
 using Services;
 using Data;
+using System.Threading.Tasks;
 
 namespace UI
 {
@@ -64,7 +65,7 @@ namespace UI
         public event System.Action OnLeaveLobby;
         
 
-        public void Initialize()
+        public async void Initialize()
         {
             TurnUI(false);
 
@@ -104,11 +105,10 @@ namespace UI
             leaveLobbyButton.OnClick += LeaveLobby;
 
 
-            this.Delayed(() =>
-            {
-                TurnUI(true);
-                State = States.Main;
-            }, 0.1f);
+            await Task.Delay(100);
+
+            TurnUI(true);
+            State = States.Main;
         }
 
         public void Bind(ILobby lobby)

@@ -1,34 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public static class Extentions
 {
-    public static Coroutine Delayed(this MonoBehaviour monoBehaviour, System.Action onDone, float time, DelayedParams delayedParams = DelayedParams.ScaledTime)
-    {
-        return monoBehaviour.StartCoroutine(DelayedCour(time, onDone, delayedParams));
-    }
-    private static IEnumerator DelayedCour(float time, System.Action onDone, DelayedParams delayedParams)
-    {
-        switch (delayedParams)
-        {
-            case DelayedParams.ScaledTime:
-                yield return new WaitForSeconds(time);
-                break;
-            case DelayedParams.UnscaledTime:
-                yield return new WaitForSecondsRealtime(time);
-                break;
-        }
-
-        onDone?.Invoke();
-    }
-    public enum DelayedParams
-    {
-        ScaledTime,
-        UnscaledTime,
-    }
-
-
     public static int GetRandom(int min, int max, int except)
     {
         for (int i = 0; i < 10; i++)

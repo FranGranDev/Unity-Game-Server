@@ -5,7 +5,7 @@ using Networking.Data;
 using UnityEngine;
 using UI;
 using Services;
-
+using System.Threading.Tasks;
 
 namespace Management
 {
@@ -46,10 +46,7 @@ namespace Management
         private void CallStartHost(int port)
         {
             server.StartServer(port);
-            this.Delayed(() =>
-            {
-                client.StartMasterClient(port);
-            }, Time.deltaTime);
+            client.StartMasterClient(port);
         }
 
 
@@ -60,10 +57,7 @@ namespace Management
         private void CallLeaveLobby()
         {
             server.StopServer();
-            this.Delayed(() =>
-            {
-                client.StopClient();
-            }, Time.deltaTime);
+            client.StopClient();
         }
 
 
