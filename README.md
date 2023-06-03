@@ -1,6 +1,11 @@
 # Ping Pong Online
 **Multiplayer game made on Unity**
 
+- Unity 2021.3.20
+- UniTask
+- DOTween
+<br>
+
 https://github.com/FranGranDev/Ping-Pong-Online/assets/87944585/435874ac-5672-4a9f-8d11-3c967f311645
 
 # Networking
@@ -78,6 +83,7 @@ public object[] GetData()
 
 Client and server are inherited from the [NetworkMethods](Assets/Scripts/Networking/Services/NetworkMethods.cs) class, which contains virtual methods that clients communicate with each other. RPC methods must be marked with the NetworkMethod attribute with the name of the method (better to use the method name itself)
 
+**NetworkMethods**
 ```csharp
 [NetworkMethod(nameof(ErrorMessage))]
 public virtual void ErrorMessage(string error, RecieveInfo info)
@@ -133,7 +139,52 @@ public virtual void UpdateObject(string id, object data, RecieveInfo info)
 
 ## Client
 
-**Recieve**
+[Player](Assets/Scripts/Networking/Data/Player.cs) class  represents information about the player: his name, id and Index. Index is formed based on ordering all players by Id.
+
+```csharp
+public class Player
+{
+    public static Player ServerPlayer
+    {
+        get
+        {
+            return new Player("Server")
+            {
+                Server = true,
+            };
+        }
+    }
+
+    public Player(string name)
+    {
+        Id = Guid.NewGuid().ToString();
+        Name = name;
+    }
+
+    public string Id { get; set; }
+    public string Name { get; set; }
+    public int Index { get; set; }
+
+    public bool Master { get; set; }
+    public bool Server { get; set; }
+
+    public override bool Equals(object obj)
+    {
+        if (obj is Player otherPlayer)
+        {
+            return Id.Equals(otherPlayer.Id);
+        }
+        return false;
+    }
+    public override int GetHashCode()
+    {
+        return Id.GetHashCode();
+    }
+}
+```
+<br>
+
+**Recieve** <br>
 [Client](Assets/Scripts/Networking/Server/Client.cs) class at startup starts a cycle of receiving messages from the server.
 
 ```csharp
@@ -176,9 +227,10 @@ private async UniTask Recieve()
     });
 }
 ```
+<br>
 
-**Invoke method by it's attribute name**
-The [NetworkMethodInvoker](Assets/Scripts/Networking/Services/NetworkMethodInvoker.cs) class is used to call a method by the attribute name NetworkMethod
+**Invoke method by it's attribute name** <br>
+The [NetworkMethodInvoker](Assets/Scripts/Networking/Services/NetworkMethodInvoker.cs) class is used to call a method by the [NetworkMethod](Assets/Scripts/Networking/Attributes/NetworkMethod.cs) attribute name 
 
 ```csharp
 public NetworkMethodInvoker(object target)
@@ -200,10 +252,31 @@ public NetworkMethodInvoker(object target)
         methodDictionary.Add(methodName, method);
     }
 }
+
+public void Invoke(string methodName, params object[] args)
+{
+    if (methodDictionary.ContainsKey(methodName))
+    {
+        MethodInfo method = methodDictionary[methodName];
+
+        try
+        {
+            method.Invoke(targetObject, args);
+        }
+        catch(Exception e)
+        {
+            SafeDebugger.Log($"Invalid argument for method {methodName} | Exception: {e}");
+        }
+    }
+    else
+    {
+        SafeDebugger.Log($"Method {methodName} not found");
+    }
+}
 ```
+<br>
 
-
-**Send message**
+**Send message** <br>
 To send a message, you must pass the name of the method and arguments. The arguments must match those of the method you want to call, except for the RecieveInfo argument
 
 ```csharp
@@ -228,4 +301,231 @@ private async UniTask SendMessage(Message message)
     }
 }
 ```
+<br>
 
+## Server
+[Server](Assets/Scripts/Networking/Server/Server.cs) receives messages and broadcast them to all connected clients. The server receives the message in the same way as the client and calls the desired method using the Invoker [NetworkMethodInvoker](Assets/Scripts/Networking/Services/NetworkMethodInvoker.cs) class. In the called methods, the server sends the received message (you can also check the message and change it additionally)
+
+**Player Connected** <br>
+```csharp
+public override async void Connect(Player player, RecieveInfo info)
+{
+    if(Handlers.Count >= 2)
+    {
+        return;
+    }
+
+    Handler handler = new Handler(udpClient, info.EndPoint);
+    handler.Player = player;
+    Handlers.Add(info.EndPoint, handler);
+
+    Message message = new Message(nameof(Connect), player);
+    message.Id = info.MessageId;
+
+    await Broadcast(message);
+
+    SafeDebugger.Log($"Server | New player connected: {player.Name} | {info.EndPoint}");
+}
+```
+<br>
+
+**Player Disconnected** <br>
+```csharp
+public override async void Disconnect(Player player, RecieveInfo info)
+{
+    if (!Handlers.ContainsKey(info.EndPoint))
+    {
+        return;
+    }
+    Handlers.Remove(info.EndPoint);
+
+    Message message = new Message(nameof(Disconnect), player);
+    message.Id = info.MessageId;
+
+    await Broadcast(message, info.EndPoint);
+
+    SafeDebugger.Log($"Server | Player disconnected: {player.Name}");
+}
+```
+
+<br>
+
+**Broadcast message** <br>
+```csharp
+private async Task Broadcast(Message message)
+{
+    IEnumerable<Handler> receivers = new List<Handler>(Handlers.Values);
+
+    foreach (Handler handler in receivers)
+    {
+        await handler.Send(message);
+    }
+}
+
+private async Task Broadcast(Message message, IPEndPoint except)
+{
+    IEnumerable<Handler> receivers = new List<Handler>(Handlers.Values
+        .Where(x => !x.EndPoint.Equals(except)));
+
+    foreach (Handler handler in receivers)
+    {
+        await handler.Send(message);
+    }
+}
+```
+
+## Synchronization
+
+[NetworkObject](Assets/Scripts/Management/UnityServer/Synchronizers/NetworkObject.cs) is the base abstract class for synchronizing an object over the network.
+```csharp
+public abstract class NetworkObject : MonoBehaviour
+{
+    public string Id { get; set; } //Unique object ID
+    public bool Mine { get; set; } //Is object local or remote
+    public abstract object Data { get; } //Necessary information about the object to update it
+
+
+
+    public void SetId(Player player) //Set ID of object
+    {
+        Id = $"{player.Id}_{name}";
+    }
+    
+    public abstract void Synchronize(object data); //Method to update object
+}
+```
+<br>
+
+**Example | Rigidbody Object** <br>
+
+```csharp
+[RequireComponent(typeof(Rigidbody))]
+public class NetworkRigidbody : NetworkObject
+{
+    private new Rigidbody rigidbody;
+    public override object Data
+    {
+        get
+        {
+            return new RigidbodyData(rigidbody);
+        }
+    }
+    private void Awake()
+    {
+        rigidbody = GetComponent<Rigidbody>();
+    }
+    public override void Synchronize(object data)
+    {
+        try
+        {
+            RigidbodyData rigidbodyData = data as RigidbodyData;
+
+            rigidbody.position = rigidbodyData.Position.GetVector();
+            rigidbody.velocity = rigidbodyData.Velocity.GetVector();
+            rigidbody.angularVelocity = rigidbodyData.Angular.GetVector();
+        }
+        catch { Debug.Log($"Cant convert {data} to RigidbodyData", this); }
+    }
+}
+```
+
+**Rigidbody Data** <br>
+
+```csharp
+public class RigidbodyData
+{
+    public RigidbodyData()
+    {
+
+    }
+    public RigidbodyData(Rigidbody rigidbody)
+    {
+        Position = new Vector3Data(rigidbody.position);
+        Velocity = new Vector3Data(rigidbody.velocity);
+        Angular = new Vector3Data(rigidbody.angularVelocity);
+    }
+    public void Accept(Rigidbody rigidbody)
+    {
+        rigidbody.position = Position.GetVector();
+        rigidbody.velocity = Velocity.GetVector();
+        rigidbody.angularVelocity = Angular.GetVector();
+    }
+    public Vector3Data Position { get; set; }
+    public Vector3Data Velocity { get; set; }
+    public Vector3Data Angular { get; set; }
+}
+```
+<br>
+
+[ObjectSynchronizer](Assets/Scripts/Management/UnityServer/Synchronizers/ObjectSynchronizer.cs) class is used to keep track of local objects and update remote objects. 
+
+**Initialization** <br>
+```csharp
+public void Initialize()
+{
+    IEnumerable<NetworkObject> objects = 
+    transform.GetComponentsInChildren<NetworkObject>(true);
+
+    localObjects = objects
+        .Where(x => x.Mine)
+        .ToDictionary(x => x.Id);
+
+    remoteObjects = objects
+        .Where(x => !x.Mine)
+        .ToDictionary(x => x.Id);
+}
+```
+Before call `Initialize()` you need to go through all `NetoworkObject` and set value`.Mine` and call method `SetId(Player player)`
+
+**Example** <br>
+
+```csharp
+[SerializeField] private List<PlayerHandler> playerHandlers;
+
+private void SetupSynchronize()
+{
+    foreach (Player player in lobby.Players)
+    {
+        bool local = player.Equals(lobby.Self);
+        PlayerHandler handler = playerHandlers[player.Index];
+        handler.SetPlayer(player, local);
+        handler.GetComponentsInChildren<NetworkObject>()
+            .ToList()
+            .ForEach(x =>
+            {
+                x.SetId(player);
+                x.Mine = local;
+            });
+    }
+
+    objectSynchronizer.OnObjectUpdated += OnObjectUpdated;
+    objectSynchronizer.Initialize();
+}
+```
+<br>
+
+In `Update()` [ObjectSynchronizer](Assets/Scripts/Management/UnityServer/Synchronizers/ObjectSynchronizer.cs) invoke `event Action<string, object> OnObjectUpdated`. [Client](Assets/Scripts/Networking/Server/Client.cs) can monitor this event and send it to the server.
+
+```csharp
+ private void Update()
+ {
+     localObjects.Values
+         .ToList()
+         .ForEach(x => OnObjectUpdated?.Invoke(x.Id, x.Data));
+ }
+```
+
+After client send `Id` and `Data` another client recieve this message and call `UpdateRemoteObject(string id, object data)` method.
+
+```csharp
+ public void UpdateRemoteObject(string id, object data)
+ {
+     if(remoteObjects.ContainsKey(id))
+     {
+         remoteObjects[id].Synchronize(data);
+     }
+ }
+```
+<br>
+
+The result is that all objects that contain an inheritor of the `NetworkObject` class will be synchronized between the two clients.
