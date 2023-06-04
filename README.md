@@ -1,12 +1,13 @@
-# Ping Pong Online
-**Multiplayer game made on Unity**
+# Unity Game Server
+**Fast UDP Game Server working on Unity. Ping Pong game maded as example**
 
 - Unity 2021.3.20
 - UniTask
 - DOTween
 <br>
 
-https://github.com/FranGranDev/Ping-Pong-Online/assets/87944585/435874ac-5672-4a9f-8d11-3c967f311645
+https://github.com/FranGranDev/Unity-Game-Server/assets/87944585/f5924bef-4510-4c0f-bb97-35556aa2d853
+
 
 # Networking
 
