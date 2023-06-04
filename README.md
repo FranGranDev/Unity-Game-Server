@@ -1,5 +1,5 @@
 # Unity Game Server
-**Fast UDP Game Server working on Unity. Ping Pong game maded as example**
+**Fast UDP Game Server working on Unity. Ping Pong game made as example**
 
 - Unity 2021.3.20
 - UniTask
