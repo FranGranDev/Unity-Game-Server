@@ -1,4 +1,7 @@
 # Unity Game Server
+![Unity](https://img.shields.io/badge/Unity-%23000000.svg?style=for-the-badge&logo=unity&logoColor=white) ![C#](https://img.shields.io/badge/C%23-%23239120.svg?style=for-the-badge&logo=c-sharp&logoColor=white) ![.NET](https://img.shields.io/badge/.NET-%235C2D91.svg?style=for-the-badge&logo=.net&logoColor=white)
+![DOTween](https://img.shields.io/badge/DOTween-%23FFD600.svg?style=for-the-badge) ![UniTask](https://img.shields.io/badge/UniTask-%23000000.svg?style=for-the-badge)
+
 **Fast UDP Game Server working on Unity. Ping Pong game made as example**
 
 - Unity 2021.3.20
